@@ -1,7 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 const ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"];
-const ALLOWED_RESOURCES = new Set(["Patient"]);
+const ALLOWED_RESOURCES = new Set([
+  "Patient",
+  "Observation",
+  "Condition",
+  "MedicationRequest",
+  "Encounter",
+  "DocumentReference",
+]);
 
 async function proxy({ request, params }: { request: Request; params: { _splat?: string } }) {
   const baseUrl = process.env.FHIR_BASE_URL;
