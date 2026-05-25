@@ -64,7 +64,9 @@ export function PatientList({
               </td>
               <td className="px-4 py-3.5"><GenderBadge gender={p.gender} /></td>
               <td className="px-4 py-3.5 text-muted-foreground">{p.birthDate ?? "—"}</td>
+              <td className="px-4 py-3.5 text-muted-foreground">{calculateAge(p.birthDate) ?? "—"}</td>
               <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">{p.id}</td>
+
               <td className="px-4 py-3.5 text-right">
                 <button
                   onClick={(e) => {
