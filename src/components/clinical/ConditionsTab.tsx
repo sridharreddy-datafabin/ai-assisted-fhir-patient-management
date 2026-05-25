@@ -218,6 +218,7 @@ export function ConditionsTab({ patientId, patient }: { patientId: string; patie
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [bulkRunning, setBulkRunning] = useState(false);
   const [filter, setFilter] = useState<FilterValue>("all");
+  const [addOpen, setAddOpen] = useState(false);
 
   const conditions = data ?? [];
 
