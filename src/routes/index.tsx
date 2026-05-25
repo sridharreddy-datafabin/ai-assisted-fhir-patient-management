@@ -31,6 +31,8 @@ function toResource(v: PatientFormValues, id?: string): FhirPatient {
 }
 
 function PatientsPage() {
+  const navigate = useNavigate();
+  const [authReady, setAuthReady] = useState(false);
   const [patients, setPatients] = useState<FhirPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,9 +44,21 @@ function PatientsPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      if (!session) navigate({ to: "/auth" });
+    });
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) navigate({ to: "/auth" });
+      else setAuthReady(true);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
     const t = setTimeout(() => setDebounced(search), 300);
     return () => clearTimeout(t);
   }, [search]);
+
 
   const load = useMemo(
     () => async (term: string) => {
