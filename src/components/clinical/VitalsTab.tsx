@@ -257,11 +257,20 @@ export function VitalsTab({ patientId }: { patientId: string }) {
   const groups = useMemo(() => {
     const map = new Map<string, { label: string; rows: VitalRow[] }>();
     for (const r of rows) {
-      // Combine systolic + diastolic into a single "Blood pressure" card.
-      const key =
-        r.code === "8480-6" || r.code === "8462-4" ? "blood-pressure" : r.code;
-      const groupLabel =
-        key === "blood-pressure" ? "Blood pressure" : r.label;
+      // Combine systolic + diastolic into a single "Blood pressure" card,
+      // and normalize alternate temperature / SpO2 LOINC codes into one group.
+      let key = r.code;
+      let groupLabel = r.label;
+      if (r.code === "8480-6" || r.code === "8462-4" || BP_CODES.has(r.code)) {
+        key = "blood-pressure";
+        groupLabel = "Blood pressure";
+      } else if (TEMP_CODES.has(r.code)) {
+        key = "temperature";
+        groupLabel = "Temperature";
+      } else if (SPO2_CODES.has(r.code)) {
+        key = "oxygen-saturation";
+        groupLabel = "Oxygen saturation";
+      }
       const g = map.get(key) ?? { label: groupLabel, rows: [] };
       g.rows.push(r);
       map.set(key, g);
