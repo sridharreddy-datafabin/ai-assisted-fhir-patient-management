@@ -14,7 +14,7 @@ import {
   formatPatientName,
   type FhirPatient,
 } from "@/lib/fhir";
-import { AlertTriangle, ShieldCheck, Sparkles, Info, Copy, Check } from "lucide-react";
+import { AlertTriangle, ShieldCheck, Sparkles, Info, Copy, Check, ChevronDown, ChevronUp, FileJson, Ban } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 interface Props {
