@@ -738,6 +738,51 @@ export function ClinicalNotesTab({ patient }: Props) {
   const [expandedPreviews, setExpandedPreviews] = useState<Set<string>>(new Set());
   const [copiedPreviewId, setCopiedPreviewId] = useState<string | null>(null);
   const [copiedAllPreviews, setCopiedAllPreviews] = useState(false);
+  const [approvals, setApprovals] = useState<globalThis.Map<string, ApprovalRecord>>(
+    new globalThis.Map(),
+  );
+  const [approvalFilter, setApprovalFilter] = useState<"All" | ApprovalStatus>("All");
+  const [copiedApprovalPkg, setCopiedApprovalPkg] = useState(false);
+
+  function getApproval(c: Candidate): ApprovalRecord {
+    return approvals.get(c.id) ?? defaultApprovalFor(c);
+  }
+
+  function patchApproval(c: Candidate, patch: Partial<ApprovalRecord>) {
+    setApprovals((prev) => {
+      const next = new globalThis.Map(prev);
+      const cur = next.get(c.id) ?? defaultApprovalFor(c);
+      next.set(c.id, { ...cur, ...patch });
+      return next;
+    });
+  }
+
+  function setApprovalStatusFor(c: Candidate, status: ApprovalStatus) {
+    if (status === "Approved for coding") {
+      const cur = getApproval(c);
+      const needsOverride =
+        (c.context === "Negated" || c.context === "Family history") &&
+        !cur.contextOverrideConfirmed;
+      if (needsOverride) {
+        const ok = globalThis.confirm(
+          `This candidate has context "${c.context}" and would normally be excluded. ` +
+            `Approve as a clinician override?`,
+        );
+        if (!ok) return;
+        patchApproval(c, { status, contextOverrideConfirmed: true });
+        return;
+      }
+    }
+    patchApproval(c, { status });
+  }
+
+  function resetApprovalFor(c: Candidate) {
+    setApprovals((prev) => {
+      const next = new globalThis.Map(prev);
+      next.delete(c.id);
+      return next;
+    });
+  }
 
   // overlap warning per id: true when this candidate shares an overlap group with another *included* candidate
   const overlapWarnings = useMemo(() => {
