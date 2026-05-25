@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -112,7 +112,12 @@ function PatientsPage() {
             <img src={logo} alt="Patient Management" className="h-7 w-7" />
             <h1 className="text-lg font-semibold text-foreground">Patient Management</h1>
           </div>
-          <span className="text-xs text-muted-foreground">FHIR R4</span>
+          <div className="flex items-center gap-4">
+            <Link to="/terminology" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+              Terminology
+            </Link>
+            <span className="text-xs text-muted-foreground">FHIR R4</span>
+          </div>
         </div>
       </header>
 
