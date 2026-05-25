@@ -1323,6 +1323,184 @@ export function ClinicalNotesTab({ patient }: Props) {
         </div>
       )}
 
+      {/* FHIR Condition previews */}
+      {candidates.length > 0 && (
+        <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+          <div className="flex items-start justify-between flex-wrap gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">FHIR Condition previews</h3>
+              <p className="text-xs text-muted-foreground">
+                Preview-only FHIR R4 Condition resources generated from eligible NLP candidates.
+                Local placeholder coding is used until SNOMED coding is implemented.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                onClick={generatePreviews}
+                disabled={eligiblePreviewCandidates.length === 0}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate FHIR Condition previews
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={copyAllPreviews}
+                disabled={!previewsGenerated || previews.length === 0}
+              >
+                {copiedAllPreviews ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+                {copiedAllPreviews ? "Copied" : "Copy all Condition previews JSON"}
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              These FHIR Condition resources are previews only. They use local NLP
+              candidate codes and must not be saved until reviewed, SNOMED-coded, and
+              approved by a clinician.
+            </div>
+          </div>
+
+          {previewsGenerated && previews.length > 0 && (
+            <>
+              {/* Preview summary */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
+                {[
+                  { label: "Total previews", value: previewSummary.total },
+                  { label: "Ready for SNOMED", value: previewSummary.ready },
+                  { label: "Needs review", value: previewSummary.needsReview },
+                  { label: "Low confidence", value: previewSummary.lowConfidence },
+                  { label: "Historical", value: previewSummary.historical },
+                  { label: "Uncertain", value: previewSummary.uncertain },
+                  { label: "Specificity review", value: previewSummary.specificityReview },
+                ].map((s) => (
+                  <div key={s.label} className="rounded-lg border border-border bg-muted/30 p-3">
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+                    <div className="mt-1 text-xl font-bold text-foreground">{s.value}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Preview cards */}
+              <div className="grid gap-3">
+                {previews.map(({ candidate: c, readiness, resource }) => {
+                  const expanded = expandedPreviews.has(c.id);
+                  const { clinical, verification } = statusesForContext(c.context, c.confidence);
+                  const warnings: string[] = [];
+                  if (c.confidence === "Low") warnings.push("Low confidence");
+                  if (
+                    c.specificity === "Generic" ||
+                    c.specificity === "Possible duplicate" ||
+                    c.specificity === "Needs specificity review"
+                  )
+                    warnings.push("Needs specificity review");
+                  if (c.context === "Historical") warnings.push("Historical");
+                  if (c.context === "Uncertain") warnings.push("Uncertain");
+                  if (c.overridden) warnings.push("Manually overridden contextual exclusion");
+
+                  return (
+                    <div key={c.id} className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                      <div className="flex items-start justify-between flex-wrap gap-2">
+                        <div className="space-y-1">
+                          <div className="text-sm font-semibold text-foreground">{c.text}</div>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            <ContextBadge value={c.context} />
+                            <ConfidenceBadge value={c.confidence} />
+                            <SpecificityBadge value={c.specificity} />
+                            <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                              clinicalStatus: {clinical}
+                            </span>
+                            <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 font-medium text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
+                              verificationStatus: {verification}
+                            </span>
+                            <span className="inline-flex rounded-full bg-sky-100 px-2 py-0.5 font-medium text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
+                              {readiness}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Suggested SNOMED search term: <span className="font-medium text-foreground">{c.searchTerm}</span>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="outline" onClick={() => togglePreviewExpanded(c.id)}>
+                            {expanded ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
+                            {expanded ? "Hide JSON" : "Show JSON"}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => copyPreviewJson(c.id, resource)}>
+                            {copiedPreviewId === c.id ? <Check className="mr-1 h-4 w-4" /> : <Copy className="mr-1 h-4 w-4" />}
+                            {copiedPreviewId === c.id ? "Copied" : "Copy JSON"}
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => excludeFromPreviews(c.id)}>
+                            <Ban className="mr-1 h-4 w-4" />
+                            Exclude from previews
+                          </Button>
+                        </div>
+                      </div>
+
+                      {warnings.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {warnings.map((w) => (
+                            <span
+                              key={w}
+                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+                            >
+                              <AlertTriangle className="h-3 w-3" />
+                              {w}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {expanded && (
+                        <pre className="overflow-auto rounded border border-border bg-background p-3 text-xs leading-relaxed text-foreground">
+                          {JSON.stringify(resource, null, 2)}
+                        </pre>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                <FileJson className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
+                  FHIR JSON dates are rendered in ISO format: YYYY-MM-DD. Condition.code
+                  uses the local placeholder system <code>urn:local:nlp-candidate</code>{" "}
+                  until SNOMED coding is implemented.
+                </span>
+              </div>
+            </>
+          )}
+
+          {previewsGenerated && previews.length === 0 && (
+            <div className="rounded border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              No eligible candidates to preview. Negated, family-history, and excluded
+              candidates are not previewed.
+            </div>
+          )}
+
+          {!previewsGenerated && (
+            <div className="rounded border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              {eligiblePreviewCandidates.length} eligible candidate(s) ready. Click
+              "Generate FHIR Condition previews" to build preview-only Condition
+              resources.
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button disabled variant="outline">Save approved Conditions</Button>
+            <Button disabled variant="outline">POST /Condition</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Saving is disabled until SNOMED coding and clinician approval are
+            implemented.
+          </p>
+        </div>
+      )}
+
       {/* Specificity explanatory note */}
       <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
@@ -1342,10 +1520,13 @@ export function ClinicalNotesTab({ patient }: Props) {
         </p>
         <div className="flex flex-wrap gap-2">
           <Button disabled variant="outline">Search SNOMED for selected candidates</Button>
-          <Button disabled variant="outline">Generate FHIR Condition previews</Button>
           <Button disabled variant="outline">Save approved Conditions</Button>
         </div>
+        <p className="text-xs text-muted-foreground">
+          Saving is disabled until SNOMED coding and clinician approval are implemented.
+        </p>
       </div>
+
 
       {/* Audit note */}
       <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
