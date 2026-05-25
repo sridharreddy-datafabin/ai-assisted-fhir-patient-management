@@ -140,9 +140,7 @@ function PatientDetailPage() {
                 </div>
               </TabsContent>
               <TabsContent value="notes">
-                <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-                  Clinical notes coming soon.
-                </div>
+                <ClinicalNotesTab patient={data} />
               </TabsContent>
               <TabsContent value="analytics">
                 <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
