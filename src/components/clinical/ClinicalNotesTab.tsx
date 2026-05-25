@@ -565,6 +565,22 @@ interface CodingQueueItem {
   addedAt: string;
 }
 
+type SignOffSnomedCoding = "Pending" | "Complete" | "Not required" | "Blocked";
+type SignOffSnomedValidation = "Pending" | "Complete" | "Failed" | "Blocked";
+type ClinicalSignOff = "Not signed" | "Signed off" | "Needs review";
+
+interface SignOffRecord {
+  coding: SignOffSnomedCoding;
+  validation: SignOffSnomedValidation;
+  signOff: ClinicalSignOff;
+}
+
+const DEFAULT_SIGN_OFF: SignOffRecord = {
+  coding: "Pending",
+  validation: "Pending",
+  signOff: "Not signed",
+};
+
 interface ApprovalRecord {
   status: ApprovalStatus;
   notes: string;
