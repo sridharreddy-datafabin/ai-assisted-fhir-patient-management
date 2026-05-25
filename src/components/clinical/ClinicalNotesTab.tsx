@@ -635,6 +635,11 @@ export function ClinicalNotesTab({ patient }: Props) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [filter, setFilter] = useState<FilterKey>("All");
   const [copied, setCopied] = useState(false);
+  const [previewsGenerated, setPreviewsGenerated] = useState(false);
+  const [excludedPreviewIds, setExcludedPreviewIds] = useState<Set<string>>(new Set());
+  const [expandedPreviews, setExpandedPreviews] = useState<Set<string>>(new Set());
+  const [copiedPreviewId, setCopiedPreviewId] = useState<string | null>(null);
+  const [copiedAllPreviews, setCopiedAllPreviews] = useState(false);
 
   // overlap warning per id: true when this candidate shares an overlap group with another *included* candidate
   const overlapWarnings = useMemo(() => {
