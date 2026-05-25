@@ -523,6 +523,104 @@ function buildConditionPreview(
   };
 }
 
+type ApprovalStatus =
+  | "Not reviewed"
+  | "Approved for coding"
+  | "Needs changes"
+  | "Rejected";
+
+type ReviewPriority =
+  | "Routine"
+  | "Needs clinician review"
+  | "Urgent review"
+  | "Do not code";
+
+const APPROVAL_STATUSES: ApprovalStatus[] = [
+  "Not reviewed",
+  "Approved for coding",
+  "Needs changes",
+  "Rejected",
+];
+
+const REVIEW_PRIORITIES: ReviewPriority[] = [
+  "Routine",
+  "Needs clinician review",
+  "Urgent review",
+  "Do not code",
+];
+
+interface ApprovalRecord {
+  status: ApprovalStatus;
+  notes: string;
+  priority: ReviewPriority;
+  clinical: ClinicalStatusCode;
+  verification: VerificationStatusCode;
+  searchTerm: string;
+  contextOverrideConfirmed: boolean;
+}
+
+function defaultApprovalFor(c: Candidate): ApprovalRecord {
+  const s = statusesForContext(c.context, c.confidence);
+  return {
+    status: "Not reviewed",
+    notes: "",
+    priority: "Routine",
+    clinical: s.clinical,
+    verification: s.verification,
+    searchTerm: c.searchTerm,
+    contextOverrideConfirmed: false,
+  };
+}
+
+function buildConditionPreviewWith(
+  c: Candidate,
+  patient: FhirPatient,
+  a: ApprovalRecord,
+): Record<string, unknown> {
+  const base = buildConditionPreview(c, patient) as Record<string, unknown>;
+  (base.clinicalStatus as { coding: Array<{ code: string; display: string; system: string }> }).coding[0] = {
+    system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+    code: a.clinical,
+    display: CLINICAL_DISPLAY[a.clinical],
+  };
+  (base.verificationStatus as { coding: Array<{ code: string; display: string; system: string }> }).coding[0] = {
+    system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+    code: a.verification,
+    display: VERIFICATION_DISPLAY[a.verification],
+  };
+  const ext = base.extension as Array<{ url: string; valueString: string }>;
+  base.extension = ext.map((e) =>
+    e.url.endsWith("nlp-suggested-snomed-search-term")
+      ? { ...e, valueString: a.searchTerm }
+      : e,
+  );
+  (base.extension as Array<{ url: string; valueString: string }>).push(
+    {
+      url: "https://example.org/fhir/StructureDefinition/nlp-review-priority",
+      valueString: a.priority,
+    },
+    {
+      url: "https://example.org/fhir/StructureDefinition/nlp-approval-status",
+      valueString: a.status,
+    },
+  );
+  return base;
+}
+
+function ApprovalBadge({ value }: { value: ApprovalStatus }) {
+  const map: Record<ApprovalStatus, string> = {
+    "Not reviewed": "bg-muted text-muted-foreground",
+    "Approved for coding": "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+    "Needs changes": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    Rejected: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
+  };
+  return (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${map[value]}`}>
+      {value}
+    </span>
+  );
+}
+
 const ELIGIBLE_READINESS = new Set<CodingReadiness>([
   "Ready for SNOMED search",
   "Needs specificity review",
