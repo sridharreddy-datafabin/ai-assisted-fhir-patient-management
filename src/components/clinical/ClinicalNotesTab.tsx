@@ -565,6 +565,22 @@ interface CodingQueueItem {
   addedAt: string;
 }
 
+type SignOffSnomedCoding = "Pending" | "Complete" | "Not required" | "Blocked";
+type SignOffSnomedValidation = "Pending" | "Complete" | "Failed" | "Blocked";
+type ClinicalSignOff = "Not signed" | "Signed off" | "Needs review";
+
+interface SignOffRecord {
+  coding: SignOffSnomedCoding;
+  validation: SignOffSnomedValidation;
+  signOff: ClinicalSignOff;
+}
+
+const DEFAULT_SIGN_OFF: SignOffRecord = {
+  coding: "Pending",
+  validation: "Pending",
+  signOff: "Not signed",
+};
+
 interface ApprovalRecord {
   status: ApprovalStatus;
   notes: string;
@@ -780,6 +796,22 @@ export function ClinicalNotesTab({ patient }: Props) {
     new globalThis.Map(),
   );
   const [copiedHandoff, setCopiedHandoff] = useState(false);
+  const [signOffs, setSignOffs] = useState<globalThis.Map<string, SignOffRecord>>(
+    new globalThis.Map(),
+  );
+  const [copiedFinalAudit, setCopiedFinalAudit] = useState(false);
+
+  function getSignOff(id: string): SignOffRecord {
+    return signOffs.get(id) ?? DEFAULT_SIGN_OFF;
+  }
+  function patchSignOff(id: string, patch: Partial<SignOffRecord>) {
+    setSignOffs((prev) => {
+      const next = new globalThis.Map(prev);
+      const cur = next.get(id) ?? DEFAULT_SIGN_OFF;
+      next.set(id, { ...cur, ...patch });
+      return next;
+    });
+  }
 
   function sendApprovedToCodingQueue(approvedIds: string[]) {
     setCodingQueue((prev) => {
@@ -2145,6 +2177,243 @@ export function ClinicalNotesTab({ patient }: Props) {
                     </div>
                   );
                 })()}
+
+                {/* Final clinical sign-off */}
+                {(() => {
+                  const signOffItems = approvedPreviews
+                    .map((p) => {
+                      const queued = codingQueue.get(p.candidate.id);
+                      if (!queued) return null;
+                      if (queued.codingStatus === "Manually removed") return null;
+                      if (queued.codingStatus === "Coding deferred") return null;
+                      const c = p.candidate;
+                      if (c.context === "Negated" || c.context === "Family history") return null;
+                      return { candidate: c, queued };
+                    })
+                    .filter((x): x is { candidate: Candidate; queued: CodingQueueItem } => x !== null);
+
+                  const signOffRows = signOffItems.map(({ candidate: c }) => {
+                    const a = getApproval(c);
+                    const s = getSignOff(c.id);
+                    const reasons: string[] = [];
+                    if (s.coding !== "Complete" && s.coding !== "Not required") reasons.push("SNOMED coding pending");
+                    if (s.validation !== "Complete") reasons.push("SNOMED validation pending");
+                    if (s.signOff !== "Signed off") reasons.push("Clinical sign-off not complete");
+                    const ready =
+                      a.status === "Approved for coding" &&
+                      (s.coding === "Complete" || s.coding === "Not required") &&
+                      s.validation === "Complete" &&
+                      s.signOff === "Signed off";
+                    return { c, a, s, ready, reasons };
+                  });
+
+                  const counts = {
+                    eligible: signOffItems.length,
+                    signedOff: signOffRows.filter((r) => r.s.signOff === "Signed off").length,
+                    needsReview: signOffRows.filter((r) => r.s.signOff === "Needs review").length,
+                    codingPending: signOffRows.filter((r) => r.s.coding === "Pending").length,
+                    validationPending: signOffRows.filter((r) => r.s.validation === "Pending").length,
+                    readyForSave: signOffRows.filter((r) => r.ready).length,
+                    blocked: signOffRows.filter((r) => r.s.coding === "Blocked" || r.s.validation === "Blocked").length,
+                  };
+
+                  async function copyFinalAuditPackage() {
+                    const payload = {
+                      patientId: patient.id ?? null,
+                      patientName: formatPatientName(patient),
+                      generatedAt: new Date().toISOString(),
+                      workflowPhase: "Phase 3 #8",
+                      signOffSummary: counts,
+                      signOffItems: signOffRows.map(({ c, a, s, ready, reasons }) => ({
+                        candidateText: c.text,
+                        suggestedSnomedSearchTerm: a.searchTerm,
+                        context: c.context,
+                        confidence: c.confidence,
+                        specificityStatus: c.specificity,
+                        approvalStatus: a.status,
+                        reviewerNotes: a.notes,
+                        clinicalStatus: a.clinical,
+                        verificationStatus: a.verification,
+                        snomedCodingStatus: s.coding,
+                        snomedValidationStatus: s.validation,
+                        clinicalSignOffStatus: s.signOff,
+                        readyForFhirSave: ready ? "Yes" : "No",
+                        readinessReasons: reasons,
+                        conditionPreviewJson: buildConditionPreviewWith(c, patient, a),
+                      })),
+                    };
+                    try {
+                      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+                      setCopiedFinalAudit(true);
+                      setTimeout(() => setCopiedFinalAudit(false), 1500);
+                    } catch {
+                      /* noop */
+                    }
+                  }
+
+                  return (
+                    <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+                      <div className="flex items-start justify-between flex-wrap gap-2">
+                        <div>
+                          <h4 className="text-base font-semibold text-foreground">Final clinical sign-off</h4>
+                          <p className="text-xs text-muted-foreground">
+                            Track readiness of approved NLP-derived Condition previews for
+                            future FHIR save. Preview-only.
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={copyFinalAuditPackage}
+                          disabled={signOffItems.length === 0}
+                        >
+                          {copiedFinalAudit ? <Check className="mr-1 h-4 w-4" /> : <ClipboardList className="mr-1 h-4 w-4" />}
+                          {copiedFinalAudit ? "Copied" : "Copy final audit package JSON"}
+                        </Button>
+                      </div>
+
+                      <div className="flex items-start gap-2 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          Final sign-off is preview-only. No FHIR record is created in
+                          Phase 3 #8. A condition may only be saved later after SNOMED
+                          coding, terminology validation, and clinical sign-off are
+                          complete.
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                        {[
+                          { label: "Eligible", value: counts.eligible },
+                          { label: "Signed off", value: counts.signedOff },
+                          { label: "Needs review", value: counts.needsReview },
+                          { label: "Coding pending", value: counts.codingPending },
+                          { label: "Validation pending", value: counts.validationPending },
+                          { label: "Ready for save", value: counts.readyForSave },
+                          { label: "Blocked", value: counts.blocked },
+                        ].map((s) => (
+                          <div key={s.label} className="rounded border border-border bg-background p-2 text-center">
+                            <div className="text-xl font-semibold text-foreground">{s.value}</div>
+                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {signOffItems.length === 0 ? (
+                        <div className="rounded border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                          No items eligible for final sign-off. Approve candidates and
+                          send them to the SNOMED coding queue first.
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Candidate</TableHead>
+                                <TableHead>Suggested SNOMED search term</TableHead>
+                                <TableHead>NLP approval</TableHead>
+                                <TableHead>SNOMED coding</TableHead>
+                                <TableHead>SNOMED validation</TableHead>
+                                <TableHead>Clinical sign-off</TableHead>
+                                <TableHead>Ready for FHIR save</TableHead>
+                                <TableHead>Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {signOffRows.map(({ c, a, s, ready, reasons }) => (
+                                <TableRow key={c.id}>
+                                  <TableCell className="font-medium">{c.text}</TableCell>
+                                  <TableCell className="text-sm">{a.searchTerm}</TableCell>
+                                  <TableCell>
+                                    <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                                      Complete
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                      {s.coding}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800 dark:bg-slate-800/50 dark:text-slate-200">
+                                      {s.validation}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                      s.signOff === "Signed off"
+                                        ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                        : s.signOff === "Needs review"
+                                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                                          : "bg-muted text-muted-foreground"
+                                    }`}>
+                                      {s.signOff}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="space-y-1">
+                                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                                        ready
+                                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                                          : "bg-muted text-muted-foreground"
+                                      }`}>
+                                        {ready ? "Yes" : "No"}
+                                      </span>
+                                      {!ready && reasons.length > 0 && (
+                                        <div className="text-[11px] text-muted-foreground">{reasons.join("; ")}</div>
+                                      )}
+                                      {s.signOff === "Signed off" && (s.coding !== "Complete" || s.validation !== "Complete") && (
+                                        <div className="text-[11px] text-amber-700 dark:text-amber-300">
+                                          Clinically signed off, but terminology coding and validation are still required before FHIR save.
+                                        </div>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex flex-wrap gap-1">
+                                      <Button size="sm" variant="ghost" onClick={() => patchSignOff(c.id, { signOff: "Signed off" })}>
+                                        <ThumbsUp className="mr-1 h-3 w-3" />
+                                        Sign off
+                                      </Button>
+                                      <Button size="sm" variant="ghost" onClick={() => patchSignOff(c.id, { signOff: "Needs review" })}>
+                                        <AlertTriangle className="mr-1 h-3 w-3" />
+                                        Needs review
+                                      </Button>
+                                      <Button size="sm" variant="ghost" onClick={() => patchSignOff(c.id, { signOff: "Not signed" })}>
+                                        <RotateCcw className="mr-1 h-3 w-3" />
+                                        Reset
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        disabled
+                                        title="This will be enabled after live SNOMED coding and validation are implemented."
+                                      >
+                                        Mark SNOMED coding complete
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        disabled
+                                        title="This will be enabled after live SNOMED coding and validation are implemented."
+                                      >
+                                        Mark SNOMED validation complete
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                          <p className="mt-2 text-[11px] text-muted-foreground">
+                            SNOMED coding and validation buttons will be enabled after
+                            live coding and terminology validation are implemented.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </>
             );
           })()}
@@ -2169,8 +2438,8 @@ export function ClinicalNotesTab({ patient }: Props) {
             <Button disabled variant="outline">Create FHIR Conditions</Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Saving to FHIR is disabled until SNOMED coding, validation, and final
-            clinician sign-off are implemented.
+            FHIR saving is disabled until live SNOMED coding, terminology
+            validation, and final sign-off are implemented.
           </p>
         </div>
       )}
