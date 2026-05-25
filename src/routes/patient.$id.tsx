@@ -121,10 +121,9 @@ function PatientDetailPage() {
               </TabsList>
 
               <TabsContent value="overview">
-                <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-                  Patient overview will appear here.
-                </div>
+                <OverviewTab patient={data} />
               </TabsContent>
+
               <TabsContent value="vitals">
                 <VitalsTab patientId={id} />
               </TabsContent>
