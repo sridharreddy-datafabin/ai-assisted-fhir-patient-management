@@ -80,7 +80,7 @@ function extractRows(obs: FhirObservation[]): VitalRow[] {
     const meta = VITAL_META[code];
     if (!meta) continue;
 
-    if (code === VITAL_CODES.bloodPressure && o.component?.length) {
+    if (BP_CODES.has(code) && o.component?.length) {
       const sys = o.component.find((c) => c.code?.coding?.some((cc) => cc.code === "8480-6"));
       const dia = o.component.find((c) => c.code?.coding?.some((cc) => cc.code === "8462-4"));
       const sysV = sys?.valueQuantity?.value;
