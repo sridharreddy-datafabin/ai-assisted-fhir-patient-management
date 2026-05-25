@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,8 +15,10 @@ import {
   formatPatientName,
   type FhirPatient,
 } from "@/lib/fhir";
-import { AlertTriangle, ShieldCheck, Sparkles, Info, Copy, Check, ChevronDown, ChevronUp, FileJson, Ban, ThumbsUp, ThumbsDown, RotateCcw, ClipboardList, Edit3 } from "lucide-react";
+import { AlertTriangle, ShieldCheck, Sparkles, Info, Copy, Check, ChevronDown, ChevronUp, FileJson, Ban, ThumbsUp, ThumbsDown, RotateCcw, ClipboardList, Edit3, ExternalLink, Send, Clock, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+
+
 
 interface Props {
   patient: FhirPatient;
