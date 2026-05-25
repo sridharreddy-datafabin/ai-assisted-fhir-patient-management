@@ -196,3 +196,15 @@ export function observationCode(o: FhirObservation): string | undefined {
 export function observationDate(o: FhirObservation): string | undefined {
   return o.effectiveDateTime || o.issued;
 }
+
+export function calculateAge(birthDate?: string): number | undefined {
+  if (!birthDate) return undefined;
+  const dob = new Date(birthDate);
+  if (Number.isNaN(dob.getTime())) return undefined;
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const m = now.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+  return age >= 0 ? age : undefined;
+}
+

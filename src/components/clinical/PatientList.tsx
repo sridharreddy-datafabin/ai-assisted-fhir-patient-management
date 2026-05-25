@@ -1,6 +1,6 @@
 import { Pencil } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { type FhirPatient, formatPatientName } from "@/lib/fhir";
+import { type FhirPatient, formatPatientName, calculateAge } from "@/lib/fhir";
 
 function GenderBadge({ gender }: { gender?: string }) {
   const g = (gender ?? "").toLowerCase();
@@ -40,8 +40,10 @@ export function PatientList({
             <th className="px-4 py-3.5 font-bold">Name</th>
             <th className="px-4 py-3.5 font-bold">Gender</th>
             <th className="px-4 py-3.5 font-bold">Date of birth</th>
+            <th className="px-4 py-3.5 font-bold">Age</th>
             <th className="px-4 py-3.5 font-bold">FHIR ID</th>
             <th className="px-4 py-3.5 text-right font-bold">Actions</th>
+
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
@@ -62,7 +64,9 @@ export function PatientList({
               </td>
               <td className="px-4 py-3.5"><GenderBadge gender={p.gender} /></td>
               <td className="px-4 py-3.5 text-muted-foreground">{p.birthDate ?? "—"}</td>
+              <td className="px-4 py-3.5 text-muted-foreground">{calculateAge(p.birthDate) ?? "—"}</td>
               <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">{p.id}</td>
+
               <td className="px-4 py-3.5 text-right">
                 <button
                   onClick={(e) => {

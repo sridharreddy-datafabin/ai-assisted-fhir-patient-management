@@ -5,6 +5,7 @@ import logo from "@/assets/logo.png";
 import {
   getPatient,
   formatPatientName,
+  calculateAge,
   type FhirPatient,
 } from "@/lib/fhir";
 import { LoadingState, ErrorState } from "@/components/clinical/StateViews";
@@ -12,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { VitalsTab } from "@/components/clinical/VitalsTab";
 import { ConditionsTab } from "@/components/clinical/ConditionsTab";
 import { MedicationsTab } from "@/components/clinical/MedicationsTab";
+import { OverviewTab } from "@/components/clinical/OverviewTab";
+
 
 export const Route = createFileRoute("/patient/$id")({
   component: PatientDetailPage,
@@ -35,14 +38,17 @@ function GenderBadge({ gender }: { gender?: string }) {
 }
 
 function Demographics({ patient }: { patient: FhirPatient }) {
+  const age = calculateAge(patient.birthDate);
   return (
     <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">{formatPatientName(patient)}</h2>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">FHIR ID: {patient.id}</p>
+          {age != null && (
+            <p className="mt-1 text-sm text-muted-foreground">{age} years old</p>
+          )}
         </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
+        <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Gender</div>
             <div className="mt-1"><GenderBadge gender={patient.gender} /></div>
@@ -51,11 +57,20 @@ function Demographics({ patient }: { patient: FhirPatient }) {
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Date of birth</div>
             <div className="mt-1 font-medium text-foreground">{patient.birthDate ?? "—"}</div>
           </div>
+          <div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Age</div>
+            <div className="mt-1 font-medium text-foreground">{age != null ? `${age}` : "—"}</div>
+          </div>
+          <div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Patient ID</div>
+            <div className="mt-1 break-all font-mono text-xs text-foreground">{patient.id ?? "—"}</div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
+
 
 function PatientDetailPage() {
   const { id } = Route.useParams();
@@ -106,10 +121,9 @@ function PatientDetailPage() {
               </TabsList>
 
               <TabsContent value="overview">
-                <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-                  Patient overview will appear here.
-                </div>
+                <OverviewTab patient={data} />
               </TabsContent>
+
               <TabsContent value="vitals">
                 <VitalsTab patientId={id} />
               </TabsContent>
