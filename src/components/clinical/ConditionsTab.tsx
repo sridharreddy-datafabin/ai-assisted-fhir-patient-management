@@ -208,7 +208,7 @@ function ServiceBanner({ status }: { status: ServiceStatus }) {
   );
 }
 
-export function ConditionsTab({ patientId }: { patientId: string }) {
+export function ConditionsTab({ patientId, patient }: { patientId: string; patient?: FhirPatient }) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["conditions", patientId],
     queryFn: () => getConditions(patientId),
