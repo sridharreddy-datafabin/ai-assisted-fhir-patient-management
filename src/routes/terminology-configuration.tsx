@@ -11,7 +11,7 @@ import {
   XCircle,
   Circle,
   Lock,
-  Map,
+  Map as MapIcon,
   Code,
   AlertTriangle,
   HelpCircle,
@@ -228,7 +228,7 @@ function TerminologyConfigurationPage() {
           </div>
         </Section>
 
-        <Section title="Mapping configuration" icon={Map}>
+        <Section title="Mapping configuration" icon={MapIcon}>
           <div className="space-y-1">
             <ConfigRow label="Future operation" value="ConceptMap/$translate" />
             <ConfigRow label="Source system" value="SNOMED CT" />

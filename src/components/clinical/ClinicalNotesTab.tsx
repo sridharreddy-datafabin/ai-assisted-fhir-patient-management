@@ -39,6 +39,12 @@ type Context =
 
 type Status = "Needs review" | "Reviewed" | "Excluded" | "Excluded by context";
 
+type SpecificityStatus =
+  | "Specific"
+  | "Generic"
+  | "Possible duplicate"
+  | "Needs specificity review";
+
 interface Candidate {
   id: string;
   text: string;
@@ -51,11 +57,14 @@ interface Candidate {
   included: boolean;
   overridden: boolean;
   searchTerm: string;
+  specificity: SpecificityStatus;
+  overlapGroup: string | null;
 }
 
 type CodingReadiness =
   | "Ready for SNOMED search"
   | "Needs clinician review"
+  | "Needs specificity review"
   | "Excluded by context"
   | "Low confidence"
   | "Uncertain context";
@@ -71,17 +80,36 @@ const SEARCH_NORMALISE: Record<string, string> = {
   "neck injury": "injury of neck",
 };
 
+// Generic → specific pairs that are NOT substring-related but are clinically related.
+const SPECIFICITY_PAIRS: Array<[string, string]> = [
+  ["depression", "depressive symptoms"],
+  ["low mood", "depression"],
+];
+
+// Pairs where the "specific" side actually requires further clarification.
+const NEEDS_SPECIFICITY_REVIEW_TERMS = new Set<string>([
+  "depressive symptoms",
+]);
+
 function suggestSearchTerm(text: string): string {
   const key = text.toLowerCase().trim();
   return SEARCH_NORMALISE[key] ?? text;
 }
 
 function codingReadinessFor(c: Candidate): CodingReadiness {
-  if (c.context === "Negated" || c.context === "Family history")
-    return "Excluded by context";
+  const contextExcluded =
+    (c.context === "Negated" || c.context === "Family history") && !c.overridden;
+  if (contextExcluded) return "Excluded by context";
+
+  if (c.specificity === "Possible duplicate") return "Needs specificity review";
+  if (c.specificity === "Needs specificity review") return "Needs clinician review";
+
+  if (c.confidence === "Low") return "Low confidence";
   if (c.context === "Historical") return "Needs clinician review";
   if (c.context === "Uncertain") return "Uncertain context";
-  if (c.confidence === "Low") return "Low confidence";
+
+  if (c.specificity === "Generic") return "Needs specificity review";
+
   return "Ready for SNOMED search";
 }
 
@@ -97,15 +125,20 @@ const TERMS: TermDef[] = [
   { term: "diabetic", type: "condition", confidence: "High" },
   { term: "hypertension", type: "condition", confidence: "High" },
   { term: "heart disease", type: "condition", confidence: "High" },
+  { term: "childhood asthma", type: "condition", confidence: "High" },
   { term: "asthma", type: "condition", confidence: "High" },
   { term: "shortness of breath", type: "symptom", confidence: "Medium" },
   { term: "chest pain", type: "symptom", confidence: "Medium" },
   { term: "neck pain", type: "symptom", confidence: "Medium" },
+  { term: "pain", type: "symptom", confidence: "Low" },
   { term: "low mood", type: "symptom", confidence: "Medium" },
+  { term: "wrist fracture", type: "condition", confidence: "Medium" },
   { term: "fracture", type: "condition", confidence: "Medium" },
   { term: "neck injury", type: "condition", confidence: "Medium" },
+  { term: "injury", type: "condition", confidence: "Low" },
   { term: "social isolation", type: "social factor", confidence: "Medium" },
   { term: "medication review", type: "review item", confidence: "Low" },
+  { term: "depressive symptoms", type: "symptom", confidence: "Medium" },
   { term: "depression", type: "condition", confidence: "High" },
   { term: "anxiety", type: "condition", confidence: "High" },
   { term: "obesity", type: "condition", confidence: "High" },
@@ -121,20 +154,19 @@ const SAMPLES: Record<string, { label: string; text: string }> = {
   },
   respiratory: {
     label: "Respiratory review",
-    text: "Patient reports intermittent shortness of breath. Possible asthma discussed. Denies chest pain. Family history of COPD noted in father.",
+    text: "Patient reports intermittent shortness of breath. Possible asthma discussed. Childhood asthma noted. Denies chest pain. Family history of COPD in father.",
   },
   injury: {
     label: "Injury review",
-    text: "Patient has neck pain after a recent fall. Previous fracture of wrist in 2018. No evidence of new fracture on examination.",
+    text: "Patient has neck pain and neck injury after a recent fall. Generalised injury noted. Previous wrist fracture in 2018. No evidence of new fracture on examination.",
   },
   social: {
     label: "Social care review",
-    text: "Patient reports social isolation and low mood. Mother had depression. Patient denies anxiety. Medication review due.",
+    text: "Patient reports social isolation, low mood and depressive symptoms. Possible depression. Mother had depression. Patient denies anxiety. Medication review due.",
   },
 };
 
-// Context detection patterns — applied to the window of text before the term
-// (and a small lookahead for "ruled out / excluded" patterns).
+// Context detection patterns
 const NEGATION_PRE = [
   /\bno\b/i,
   /\bdenies\b/i,
@@ -145,10 +177,7 @@ const NEGATION_PRE = [
   /\bwithout\b/i,
   /\bnegative for\b/i,
 ];
-const NEGATION_POST = [
-  /\bruled out\b/i,
-  /\bexcluded\b/i,
-];
+const NEGATION_POST = [/\bruled out\b/i, /\bexcluded\b/i];
 const FAMILY_PRE = [
   /\bfamily history of\b/i,
   /\bparental history of\b/i,
@@ -185,7 +214,6 @@ function detectContext(
   termStart: number,
   termEnd: number,
 ): Context {
-  // Window: from previous sentence boundary to term, and a short lookahead.
   const sentenceStart = Math.max(
     fullText.lastIndexOf(".", termStart - 1),
     fullText.lastIndexOf("\n", termStart - 1),
@@ -194,16 +222,12 @@ function detectContext(
   const pre = fullText.slice(sentenceStart + 1, termStart);
   const post = fullText.slice(termEnd, Math.min(fullText.length, termEnd + 60));
 
-  // "?term" prefix
   const immediatelyBefore = fullText.slice(Math.max(0, termStart - 2), termStart);
   if (immediatelyBefore.trim().endsWith("?")) return "Uncertain";
 
   if (FAMILY_PRE.some((r) => r.test(pre))) return "Family history";
   if (NEGATION_POST.some((r) => r.test(post))) return "Negated";
-  if (NEGATION_PRE.some((r) => r.test(pre))) {
-    // Special-case: "no history of X" should be Negated (not Historical).
-    return "Negated";
-  }
+  if (NEGATION_PRE.some((r) => r.test(pre))) return "Negated";
   if (UNCERTAIN_PRE.some((r) => r.test(pre))) return "Uncertain";
   if (HISTORICAL_PRE.some((r) => r.test(pre))) return "Historical";
   return "Present";
@@ -250,6 +274,93 @@ function defaultsForContext(ctx: Context): {
   }
 }
 
+function escapeRe(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function annotateSpecificity(cs: Candidate[]): Candidate[] {
+  type Info = {
+    specificity: SpecificityStatus;
+    overlapGroup: string | null;
+  };
+  const info = new globalThis.Map<string, Info>();
+  cs.forEach((c) =>
+    info.set(c.id, { specificity: "Specific", overlapGroup: null }),
+  );
+
+  // Exact duplicate detection (by lowered text)
+  const byText = new globalThis.Map<string, Candidate[]>();
+  cs.forEach((c) => {
+    const k = c.text.toLowerCase().trim();
+    const arr = byText.get(k) ?? [];
+    arr.push(c);
+    byText.set(k, arr);
+  });
+
+  // Generic↔specific via substring (whole word) or explicit pairs
+  for (let i = 0; i < cs.length; i++) {
+    for (let j = 0; j < cs.length; j++) {
+      if (i === j) continue;
+      const a = cs[i];
+      const b = cs[j];
+      const at = a.text.toLowerCase().trim();
+      const bt = b.text.toLowerCase().trim();
+      if (at === bt) continue;
+
+      const substringHit =
+        bt.length > at.length && new RegExp(`\\b${escapeRe(at)}\\b`, "i").test(bt);
+      const pairHit = SPECIFICITY_PAIRS.some(
+        ([g, s]) => g === at && s === bt,
+      );
+
+      if (substringHit || pairHit) {
+        const ai = info.get(a.id)!;
+        const bi = info.get(b.id)!;
+        if (ai.specificity !== "Possible duplicate") ai.specificity = "Generic";
+        ai.overlapGroup = ai.overlapGroup ?? at;
+        bi.overlapGroup = bi.overlapGroup ?? at;
+        if (NEEDS_SPECIFICITY_REVIEW_TERMS.has(bt)) {
+          if (bi.specificity === "Specific")
+            bi.specificity = "Needs specificity review";
+        }
+      }
+    }
+  }
+
+  // Apply duplicate status (overrides Generic)
+  byText.forEach((rows, key) => {
+    if (rows.length > 1) {
+      rows.forEach((r) => {
+        const inf = info.get(r.id)!;
+        inf.specificity = "Possible duplicate";
+        inf.overlapGroup = inf.overlapGroup ?? key;
+      });
+    }
+  });
+
+  return cs.map((c) => {
+    const inf = info.get(c.id)!;
+    let suggestedAction = c.suggestedAction;
+    if (c.context !== "Negated" && c.context !== "Family history") {
+      if (inf.specificity === "Specific")
+        suggestedAction = "Review before coding";
+      else if (inf.specificity === "Generic")
+        suggestedAction =
+          "Consider excluding if a more specific candidate is correct";
+      else if (inf.specificity === "Possible duplicate")
+        suggestedAction = "Review duplicate extraction";
+      else if (inf.specificity === "Needs specificity review")
+        suggestedAction = "Clarify concept before SNOMED coding";
+    }
+    return {
+      ...c,
+      specificity: inf.specificity,
+      overlapGroup: inf.overlapGroup,
+      suggestedAction,
+    };
+  });
+}
+
 function extractCandidates(note: string): Candidate[] {
   if (!note.trim()) return [];
   const lower = note.toLowerCase();
@@ -290,16 +401,19 @@ function extractCandidates(note: string): Candidate[] {
           included: defs.included,
           overridden: false,
           searchTerm: suggestSearchTerm(note.slice(idx, end)),
+          specificity: "Specific",
+          overlapGroup: null,
         });
       }
       idx = end;
     }
   }
-  return found.sort((a, b) => {
+  const sortedByPos = found.sort((a, b) => {
     const aIdx = parseInt(a.id.split("-").pop() ?? "0", 10);
     const bIdx = parseInt(b.id.split("-").pop() ?? "0", 10);
     return aIdx - bIdx;
   });
+  return annotateSpecificity(sortedByPos);
 }
 
 function ConfidenceBadge({ value }: { value: Confidence }) {
@@ -325,16 +439,25 @@ function TypeBadge({ value }: { value: CandidateType }) {
 
 function ContextBadge({ value }: { value: Context }) {
   const map: Record<Context, string> = {
-    Present:
-      "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
-    Negated:
-      "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
-    Historical:
-      "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
-    "Family history":
-      "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
-    Uncertain:
-      "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    Present: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
+    Negated: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
+    Historical: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
+    "Family history": "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+    Uncertain: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+  };
+  return (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${map[value]}`}>
+      {value}
+    </span>
+  );
+}
+
+function SpecificityBadge({ value }: { value: SpecificityStatus }) {
+  const map: Record<SpecificityStatus, string> = {
+    Specific: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-300",
+    Generic: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+    "Possible duplicate": "bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900/30 dark:text-fuchsia-300",
+    "Needs specificity review": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
   };
   return (
     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${map[value]}`}>
@@ -352,7 +475,11 @@ type FilterKey =
   | "Uncertain"
   | "Included only"
   | "Excluded only"
-  | "Reviewed only";
+  | "Reviewed only"
+  | "Specific"
+  | "Generic"
+  | "Possible duplicate"
+  | "Needs specificity review";
 
 const FILTERS: FilterKey[] = [
   "All",
@@ -364,7 +491,19 @@ const FILTERS: FilterKey[] = [
   "Included only",
   "Excluded only",
   "Reviewed only",
+  "Specific",
+  "Generic",
+  "Possible duplicate",
+  "Needs specificity review",
 ];
+
+function isActivelyIncluded(c: Candidate) {
+  return (
+    c.included &&
+    c.status !== "Excluded" &&
+    c.status !== "Excluded by context"
+  );
+}
 
 export function ClinicalNotesTab({ patient }: Props) {
   const [note, setNote] = useState("");
@@ -372,17 +511,53 @@ export function ClinicalNotesTab({ patient }: Props) {
   const [filter, setFilter] = useState<FilterKey>("All");
   const [copied, setCopied] = useState(false);
 
-  const selectedQueue = useMemo(() => {
-    return candidates.filter((c) => {
-      if (!c.included) return false;
-      if (c.status === "Excluded" || c.status === "Excluded by context") return false;
-      const contextuallyExcluded =
-        c.context === "Negated" || c.context === "Family history";
-      // Excluded by context unless manually overridden (overridden=true)
-      if (contextuallyExcluded && !c.overridden) return false;
-      return true;
+  // overlap warning per id: true when this candidate shares an overlap group with another *included* candidate
+  const overlapWarnings = useMemo(() => {
+    const w = new globalThis.Map<string, boolean>();
+    candidates.forEach((c) => {
+      if (!c.overlapGroup || !isActivelyIncluded(c)) {
+        w.set(c.id, false);
+        return;
+      }
+      const sibling = candidates.some(
+        (o) =>
+          o.id !== c.id &&
+          o.overlapGroup === c.overlapGroup &&
+          isActivelyIncluded(o),
+      );
+      w.set(c.id, sibling);
     });
+    return w;
   }, [candidates]);
+
+  const overlapGroups = useMemo(() => {
+    const groups = new globalThis.Map<string, Candidate[]>();
+    candidates.forEach((c) => {
+      if (!c.overlapGroup) return;
+      const arr = groups.get(c.overlapGroup) ?? [];
+      arr.push(c);
+      groups.set(c.overlapGroup, arr);
+    });
+    // Only keep groups with 2+ rows
+    return Array.from(groups.entries()).filter(([, rows]) => rows.length > 1);
+  }, [candidates]);
+
+  const anyOverlapIncluded = useMemo(
+    () => Array.from(overlapWarnings.values()).some(Boolean),
+    [overlapWarnings],
+  );
+
+  const selectedQueue = useMemo(
+    () =>
+      candidates.filter((c) => {
+        if (!isActivelyIncluded(c)) return false;
+        const contextuallyExcluded =
+          c.context === "Negated" || c.context === "Family history";
+        if (contextuallyExcluded && !c.overridden) return false;
+        return true;
+      }),
+    [candidates],
+  );
 
   const queueSummary = useMemo(() => {
     const by = (fn: (c: Candidate) => boolean) => selectedQueue.filter(fn).length;
@@ -390,11 +565,23 @@ export function ClinicalNotesTab({ patient }: Props) {
       included: selectedQueue.length,
       ready: by((c) => codingReadinessFor(c) === "Ready for SNOMED search"),
       needsReview: by((c) => codingReadinessFor(c) === "Needs clinician review"),
+      needsSpecificity: by((c) => codingReadinessFor(c) === "Needs specificity review"),
       lowConfidence: by((c) => codingReadinessFor(c) === "Low confidence"),
       uncertain: by((c) => codingReadinessFor(c) === "Uncertain context"),
       excludedByContext: by((c) => codingReadinessFor(c) === "Excluded by context"),
     };
   }, [selectedQueue]);
+
+  const specificitySummary = useMemo(() => {
+    const by = (fn: (c: Candidate) => boolean) => candidates.filter(fn).length;
+    return {
+      specific: by((c) => c.specificity === "Specific"),
+      generic: by((c) => c.specificity === "Generic"),
+      duplicate: by((c) => c.specificity === "Possible duplicate"),
+      needsSpec: by((c) => c.specificity === "Needs specificity review"),
+      overlapGroups: overlapGroups.length,
+    };
+  }, [candidates, overlapGroups]);
 
   async function copyQueueJson() {
     const payload = selectedQueue.map((c) => ({
@@ -406,6 +593,9 @@ export function ClinicalNotesTab({ patient }: Props) {
       confidence: c.confidence,
       sourcePhrase: c.sourcePhrase,
       suggestedSnomedSearchTerm: c.searchTerm,
+      specificityStatus: c.specificity,
+      overlapGroup: c.overlapGroup,
+      overlapWarning: overlapWarnings.get(c.id) ?? false,
       codingReadiness: codingReadinessFor(c),
       included: c.included,
       reviewed: c.status === "Reviewed",
@@ -428,12 +618,7 @@ export function ClinicalNotesTab({ patient }: Props) {
       historical: by((c) => c.context === "Historical"),
       family: by((c) => c.context === "Family history"),
       uncertain: by((c) => c.context === "Uncertain"),
-      included: by(
-        (c) =>
-          c.included &&
-          c.status !== "Excluded" &&
-          c.status !== "Excluded by context",
-      ),
+      included: by(isActivelyIncluded),
       excluded: by(
         (c) => c.status === "Excluded" || c.status === "Excluded by context",
       ),
@@ -446,18 +631,18 @@ export function ClinicalNotesTab({ patient }: Props) {
       case "All":
         return candidates;
       case "Included only":
-        return candidates.filter(
-          (c) =>
-            c.included &&
-            c.status !== "Excluded" &&
-            c.status !== "Excluded by context",
-        );
+        return candidates.filter(isActivelyIncluded);
       case "Excluded only":
         return candidates.filter(
           (c) => c.status === "Excluded" || c.status === "Excluded by context",
         );
       case "Reviewed only":
         return candidates.filter((c) => c.status === "Reviewed");
+      case "Specific":
+      case "Generic":
+      case "Possible duplicate":
+      case "Needs specificity review":
+        return candidates.filter((c) => c.specificity === filter);
       default:
         return candidates.filter((c) => c.context === filter);
     }
@@ -477,7 +662,6 @@ export function ClinicalNotesTab({ patient }: Props) {
 
   function toggleInclude(c: Candidate, next: boolean) {
     if (next) {
-      // Including
       const isContextExcluded =
         c.context === "Negated" || c.context === "Family history";
       updateCandidate(c.id, {
@@ -486,7 +670,6 @@ export function ClinicalNotesTab({ patient }: Props) {
         overridden: isContextExcluded ? true : c.overridden,
       });
     } else {
-      // Excluding
       updateCandidate(c.id, {
         included: false,
         status: "Excluded",
@@ -559,7 +742,7 @@ export function ClinicalNotesTab({ patient }: Props) {
         </div>
       </div>
 
-      {/* Summary */}
+      {/* Context summary */}
       {candidates.length > 0 && (
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-9">
           {[
@@ -578,6 +761,57 @@ export function ClinicalNotesTab({ patient }: Props) {
               <div className="mt-1 text-xl font-bold text-foreground">{s.value}</div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Specificity summary */}
+      {candidates.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            { label: "Specific", value: specificitySummary.specific },
+            { label: "Generic", value: specificitySummary.generic },
+            { label: "Possible duplicate", value: specificitySummary.duplicate },
+            { label: "Needs specificity review", value: specificitySummary.needsSpec },
+            { label: "Overlap groups", value: specificitySummary.overlapGroups },
+          ].map((s) => (
+            <div key={s.label} className="rounded-lg border border-border bg-muted/30 p-3">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+              <div className="mt-1 text-xl font-bold text-foreground">{s.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Overlap warning banner */}
+      {anyOverlapIncluded && (
+        <div className="flex items-start gap-3 rounded-lg border border-orange-300 bg-orange-50 p-4 text-sm text-orange-900 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-200">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            Potential duplicate or overlapping concepts detected. Review specificity
+            before coding.
+          </div>
+        </div>
+      )}
+
+      {/* Overlap groups list */}
+      {overlapGroups.length > 0 && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <div className="text-sm font-semibold text-foreground">Overlap groups</div>
+          <div className="space-y-2">
+            {overlapGroups.map(([group, rows]) => (
+              <div key={group} className="rounded border border-border bg-muted/30 p-3 text-sm">
+                <div className="font-medium text-foreground">Overlap group: {group}</div>
+                <ul className="mt-1 list-disc pl-5 text-muted-foreground">
+                  {rows.map((r) => (
+                    <li key={r.id}>
+                      {r.text}{" "}
+                      <span className="text-xs">({r.specificity})</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -613,6 +847,7 @@ export function ClinicalNotesTab({ patient }: Props) {
                 <TableHead>Extracted text</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Context</TableHead>
+                <TableHead>Specificity</TableHead>
                 <TableHead>Confidence</TableHead>
                 <TableHead>Source phrase</TableHead>
                 <TableHead>Status</TableHead>
@@ -623,21 +858,26 @@ export function ClinicalNotesTab({ patient }: Props) {
             <TableBody>
               {visible.map((c) => {
                 const hardExcluded = c.status === "Excluded";
+                const hasOverlap = overlapWarnings.get(c.id) ?? false;
                 return (
                   <TableRow key={c.id} className={hardExcluded ? "opacity-50" : ""}>
                     <TableCell>
                       <Checkbox
-                        checked={
-                          c.included &&
-                          c.status !== "Excluded" &&
-                          c.status !== "Excluded by context"
-                        }
+                        checked={isActivelyIncluded(c)}
                         onCheckedChange={(v) => toggleInclude(c, Boolean(v))}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{c.text}</TableCell>
+                    <TableCell className="font-medium">
+                      {c.text}
+                      {c.overlapGroup && (
+                        <div className="mt-1 text-[11px] text-muted-foreground">
+                          Overlap group: {c.overlapGroup}
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell><TypeBadge value={c.type} /></TableCell>
                     <TableCell><ContextBadge value={c.context} /></TableCell>
+                    <TableCell><SpecificityBadge value={c.specificity} /></TableCell>
                     <TableCell><ConfidenceBadge value={c.confidence} /></TableCell>
                     <TableCell className="max-w-xs text-sm text-muted-foreground">{c.sourcePhrase}</TableCell>
                     <TableCell className="text-sm">
@@ -648,6 +888,14 @@ export function ClinicalNotesTab({ patient }: Props) {
                           <span>
                             This candidate was excluded by context. Include only if
                             clinically appropriate.
+                          </span>
+                        </div>
+                      )}
+                      {hasOverlap && (
+                        <div className="mt-1 flex items-start gap-1 rounded border border-orange-300 bg-orange-50 p-1.5 text-[11px] text-orange-900 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-200">
+                          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                          <span>
+                            This candidate overlaps with a more specific candidate.
                           </span>
                         </div>
                       )}
@@ -686,7 +934,7 @@ export function ClinicalNotesTab({ patient }: Props) {
               })}
               {visible.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center text-sm text-muted-foreground">
                     No candidates match this filter.
                   </TableCell>
                 </TableRow>
@@ -704,8 +952,8 @@ export function ClinicalNotesTab({ patient }: Props) {
       <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
         <div>
-          Context detection is rule-based and intended for workflow support only.
-          Clinician review is required before coding or saving any condition.
+          Context, specificity and duplicate detection are rule-based. Clinician review
+          is required before coding or saving any condition.
         </div>
       </div>
 
@@ -729,16 +977,17 @@ export function ClinicalNotesTab({ patient }: Props) {
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
               This SNOMED review queue is preview-only. No terminology search, coding,
-              mapping, or FHIR save occurs in Phase 3 #3.
+              mapping, or FHIR save occurs in this step.
             </div>
           </div>
 
           {/* Queue summary */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-7">
             {[
               { label: "Included", value: queueSummary.included },
               { label: "Ready for search", value: queueSummary.ready },
               { label: "Needs review", value: queueSummary.needsReview },
+              { label: "Needs specificity", value: queueSummary.needsSpecificity },
               { label: "Low confidence", value: queueSummary.lowConfidence },
               { label: "Uncertain", value: queueSummary.uncertain },
               { label: "Excluded by context", value: queueSummary.excludedByContext },
@@ -761,6 +1010,7 @@ export function ClinicalNotesTab({ patient }: Props) {
                   <TableHead>Candidate text</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Context</TableHead>
+                  <TableHead>Specificity</TableHead>
                   <TableHead>Confidence</TableHead>
                   <TableHead>Source phrase</TableHead>
                   <TableHead>Review status</TableHead>
@@ -772,11 +1022,20 @@ export function ClinicalNotesTab({ patient }: Props) {
               <TableBody>
                 {selectedQueue.map((c) => {
                   const readiness = codingReadinessFor(c);
+                  const hasOverlap = overlapWarnings.get(c.id) ?? false;
                   return (
                     <TableRow key={c.id}>
-                      <TableCell className="font-medium">{c.text}</TableCell>
+                      <TableCell className="font-medium">
+                        {c.text}
+                        {c.overlapGroup && (
+                          <div className="mt-1 text-[11px] text-muted-foreground">
+                            Overlap group: {c.overlapGroup}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell><TypeBadge value={c.type} /></TableCell>
                       <TableCell><ContextBadge value={c.context} /></TableCell>
+                      <TableCell><SpecificityBadge value={c.specificity} /></TableCell>
                       <TableCell><ConfidenceBadge value={c.confidence} /></TableCell>
                       <TableCell className="max-w-xs text-sm text-muted-foreground">{c.sourcePhrase}</TableCell>
                       <TableCell className="text-sm">{c.status}</TableCell>
@@ -808,6 +1067,14 @@ export function ClinicalNotesTab({ patient }: Props) {
                             </span>
                           </div>
                         )}
+                        {hasOverlap && (
+                          <div className="mt-1 flex items-start gap-1 rounded border border-orange-300 bg-orange-50 p-1.5 text-[11px] text-orange-900 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-200">
+                            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                            <span>
+                              This candidate overlaps with a more specific candidate.
+                            </span>
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
@@ -829,7 +1096,7 @@ export function ClinicalNotesTab({ patient }: Props) {
                 })}
                 {selectedQueue.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center text-sm text-muted-foreground">
                       No candidates selected for SNOMED review yet. Include candidates above to add them to the queue.
                     </TableCell>
                   </TableRow>
@@ -849,6 +1116,15 @@ export function ClinicalNotesTab({ patient }: Props) {
           </p>
         </div>
       )}
+
+      {/* Specificity explanatory note */}
+      <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          Specificity and duplicate detection are rule-based. Clinician review is
+          required before coding or saving any condition.
+        </div>
+      </div>
 
       {/* Future workflow */}
       <div className="rounded-lg border border-border bg-card p-6 space-y-4">
