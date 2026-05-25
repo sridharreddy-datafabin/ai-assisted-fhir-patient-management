@@ -2438,8 +2438,8 @@ export function ClinicalNotesTab({ patient }: Props) {
             <Button disabled variant="outline">Create FHIR Conditions</Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Saving to FHIR is disabled until SNOMED coding, validation, and final
-            clinician sign-off are implemented.
+            FHIR saving is disabled until live SNOMED coding, terminology
+            validation, and final sign-off are implemented.
           </p>
         </div>
       )}
