@@ -796,6 +796,22 @@ export function ClinicalNotesTab({ patient }: Props) {
     new globalThis.Map(),
   );
   const [copiedHandoff, setCopiedHandoff] = useState(false);
+  const [signOffs, setSignOffs] = useState<globalThis.Map<string, SignOffRecord>>(
+    new globalThis.Map(),
+  );
+  const [copiedFinalAudit, setCopiedFinalAudit] = useState(false);
+
+  function getSignOff(id: string): SignOffRecord {
+    return signOffs.get(id) ?? DEFAULT_SIGN_OFF;
+  }
+  function patchSignOff(id: string, patch: Partial<SignOffRecord>) {
+    setSignOffs((prev) => {
+      const next = new globalThis.Map(prev);
+      const cur = next.get(id) ?? DEFAULT_SIGN_OFF;
+      next.set(id, { ...cur, ...patch });
+      return next;
+    });
+  }
 
   function sendApprovedToCodingQueue(approvedIds: string[]) {
     setCodingQueue((prev) => {
