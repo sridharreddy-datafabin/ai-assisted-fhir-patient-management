@@ -105,10 +105,10 @@ async function validateCode(code: string): Promise<ValidationResult> {
       return { ...base, status: "error", message: `HTTP ${res.status}` };
     }
 
-    const params = body.parameter ?? [];
-    const result = params.find((p) => p.name === "result")?.valueBoolean;
-    const message = params.find((p) => p.name === "message")?.valueString;
-    const display = params.find((p) => p.name === "display")?.valueString;
+    const responseParams = body.parameter ?? [];
+    const result = responseParams.find((p) => p.name === "result")?.valueBoolean;
+    const message = responseParams.find((p) => p.name === "message")?.valueString;
+    const display = responseParams.find((p) => p.name === "display")?.valueString;
 
     if (result === true) return { ...base, status: "valid", message, display };
     if (result === false) return { ...base, status: "invalid", message, display };
