@@ -1,10 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, ChevronLeft, AlertTriangle, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { Search, ChevronLeft, AlertTriangle, CheckCircle2, XCircle, HelpCircle, Info } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { LoadingState, ErrorState, EmptyState } from "@/components/clinical/StateViews";
 
+type TerminologySearch = { search?: string };
+
 export const Route = createFileRoute("/terminology")({
+  validateSearch: (raw: Record<string, unknown>): TerminologySearch => {
+    const s = raw.search;
+    return typeof s === "string" && s.length > 0 ? { search: s } : {};
+  },
   component: TerminologyPage,
 });
 
