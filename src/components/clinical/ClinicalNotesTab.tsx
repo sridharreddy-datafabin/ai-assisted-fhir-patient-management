@@ -50,6 +50,39 @@ interface Candidate {
   status: Status;
   included: boolean;
   overridden: boolean;
+  searchTerm: string;
+}
+
+type CodingReadiness =
+  | "Ready for SNOMED search"
+  | "Needs clinician review"
+  | "Excluded by context"
+  | "Low confidence"
+  | "Uncertain context";
+
+const SEARCH_NORMALISE: Record<string, string> = {
+  "type 2 diabetes": "diabetes mellitus type 2",
+  "diabetes": "diabetes mellitus",
+  "diabetic": "diabetes mellitus",
+  "shortness of breath": "dyspnea",
+  "high blood pressure": "hypertension",
+  "low mood": "depressive symptoms",
+  "medication review": "medication review",
+  "neck injury": "injury of neck",
+};
+
+function suggestSearchTerm(text: string): string {
+  const key = text.toLowerCase().trim();
+  return SEARCH_NORMALISE[key] ?? text;
+}
+
+function codingReadinessFor(c: Candidate): CodingReadiness {
+  if (c.context === "Negated" || c.context === "Family history")
+    return "Excluded by context";
+  if (c.context === "Historical") return "Needs clinician review";
+  if (c.context === "Uncertain") return "Uncertain context";
+  if (c.confidence === "Low") return "Low confidence";
+  return "Ready for SNOMED search";
 }
 
 interface TermDef {
