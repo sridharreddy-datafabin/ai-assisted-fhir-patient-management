@@ -1,8 +1,9 @@
 import { useState, useMemo, Fragment } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Loader2, ShieldCheck, ShieldAlert, ShieldX, Shield, HelpCircle } from "lucide-react";
-import { getConditions, codeDisplay, type FhirCondition } from "@/lib/fhir";
+import { ChevronDown, ChevronRight, Loader2, ShieldCheck, ShieldAlert, ShieldX, Shield, HelpCircle, Plus } from "lucide-react";
+import { getConditions, codeDisplay, type FhirCondition, type FhirPatient } from "@/lib/fhir";
 import { LoadingState, ErrorState, EmptyState } from "./StateViews";
+import { AddConditionDialog } from "./AddConditionDialog";
 
 const SNOMED_SYSTEM = "http://snomed.info/sct";
 
