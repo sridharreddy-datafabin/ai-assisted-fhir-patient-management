@@ -11,7 +11,7 @@ import {
   XCircle,
   Circle,
   Lock,
-  Map,
+  Map as MapIcon,
   Code,
   AlertTriangle,
   HelpCircle,
