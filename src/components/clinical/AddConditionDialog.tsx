@@ -169,8 +169,10 @@ export function AddConditionDialog({
         display: formatPatientName(patient),
       },
     };
-    if (onsetDate) resource.onsetDateTime = onsetDate;
-    if (recordedDate) resource.recordedDate = recordedDate;
+    const onsetIso = toIsoDate(onsetDate);
+    const recordedIso = toIsoDate(recordedDate);
+    if (onsetIso) resource.onsetDateTime = onsetIso;
+    if (recordedIso) resource.recordedDate = recordedIso;
     if (notes.trim()) resource.note = [{ text: notes.trim() }];
     return resource;
   }, [selected, clinicalStatus, verificationStatus, onsetDate, recordedDate, notes, patient]);
