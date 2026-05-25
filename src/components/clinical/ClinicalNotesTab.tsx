@@ -709,6 +709,147 @@ export function ClinicalNotesTab({ patient }: Props) {
         </div>
       </div>
 
+      {/* SNOMED review preparation */}
+      {candidates.length > 0 && (
+        <div className="rounded-lg border border-border bg-card p-6 space-y-4">
+          <div className="flex items-start justify-between flex-wrap gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">SNOMED review preparation</h3>
+              <p className="text-xs text-muted-foreground">
+                Selected candidates queued for later terminology coding review.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" onClick={copyQueueJson} disabled={selectedQueue.length === 0}>
+              {copied ? <Check className="mr-2 h-4 w-4" /> : <Copy className="mr-2 h-4 w-4" />}
+              {copied ? "Copied" : "Copy coding queue JSON"}
+            </Button>
+          </div>
+
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              This SNOMED review queue is preview-only. No terminology search, coding,
+              mapping, or FHIR save occurs in Phase 3 #3.
+            </div>
+          </div>
+
+          {/* Queue summary */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {[
+              { label: "Included", value: queueSummary.included },
+              { label: "Ready for search", value: queueSummary.ready },
+              { label: "Needs review", value: queueSummary.needsReview },
+              { label: "Low confidence", value: queueSummary.lowConfidence },
+              { label: "Uncertain", value: queueSummary.uncertain },
+              { label: "Excluded by context", value: queueSummary.excludedByContext },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg border border-border bg-muted/30 p-3">
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+                <div className="mt-1 text-xl font-bold text-foreground">{s.value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Queue table */}
+          <div className="rounded-lg border border-border">
+            <div className="border-b border-border p-3">
+              <h4 className="text-sm font-semibold text-foreground">Selected candidates for SNOMED review</h4>
+            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Candidate text</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Context</TableHead>
+                  <TableHead>Confidence</TableHead>
+                  <TableHead>Source phrase</TableHead>
+                  <TableHead>Review status</TableHead>
+                  <TableHead>Suggested SNOMED search term</TableHead>
+                  <TableHead>Coding readiness</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedQueue.map((c) => {
+                  const readiness = codingReadinessFor(c);
+                  return (
+                    <TableRow key={c.id}>
+                      <TableCell className="font-medium">{c.text}</TableCell>
+                      <TableCell><TypeBadge value={c.type} /></TableCell>
+                      <TableCell><ContextBadge value={c.context} /></TableCell>
+                      <TableCell><ConfidenceBadge value={c.confidence} /></TableCell>
+                      <TableCell className="max-w-xs text-sm text-muted-foreground">{c.sourcePhrase}</TableCell>
+                      <TableCell className="text-sm">{c.status}</TableCell>
+                      <TableCell>
+                        <Input
+                          value={c.searchTerm}
+                          onChange={(e) => updateCandidate(c.id, { searchTerm: e.target.value })}
+                          className="h-8 text-sm"
+                        />
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                            readiness === "Ready for SNOMED search"
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                              : readiness === "Excluded by context"
+                                ? "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300"
+                                : "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                          }`}
+                        >
+                          {readiness}
+                        </span>
+                        {c.overridden && (
+                          <div className="mt-1 flex items-start gap-1 rounded border border-amber-300 bg-amber-50 p-1.5 text-[11px] text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                            <span>
+                              This candidate was included manually despite contextual
+                              exclusion. Review carefully before coding.
+                            </span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() =>
+                            updateCandidate(c.id, {
+                              status: "Excluded",
+                              included: false,
+                              overridden: false,
+                            })
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+                {selectedQueue.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
+                      No candidates selected for SNOMED review yet. Include candidates above to add them to the queue.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button disabled variant="outline">Prepare SNOMED searches</Button>
+            <Button disabled variant="outline">Open in SNOMED Concept Search</Button>
+            <Button disabled variant="outline">Generate Condition previews</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            SNOMED search is disabled until terminology credentials are configured.
+            This step only prepares candidate terms for later coding review.
+          </p>
+        </div>
+      )}
+
       {/* Future workflow */}
       <div className="rounded-lg border border-border bg-card p-6 space-y-4">
         <h3 className="text-lg font-semibold text-foreground">Future coding workflow</h3>
