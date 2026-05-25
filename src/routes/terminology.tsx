@@ -31,13 +31,17 @@ interface SearchError {
 }
 
 function TerminologyPage() {
-  const [term, setTerm] = useState("");
+  const { search: prefill } = Route.useSearch();
+  const [term, setTerm] = useState(prefill ?? "");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SnomedConcept[] | null>(null);
   const [error, setError] = useState<SearchError | null>(null);
   const [status, setStatus] = useState<Status>("unknown");
   const [lastPath, setLastPath] = useState<string>("");
   const [showDetails, setShowDetails] = useState(false);
+  const [handoffBannerDismissed, setHandoffBannerDismissed] = useState(false);
+  const showHandoffBanner = Boolean(prefill) && !handoffBannerDismissed;
+
 
   const doSearch = async () => {
     const q = term.trim();
