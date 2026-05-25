@@ -1,8 +1,7 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { LogOut, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import logo from "@/assets/logo.png";
-import { supabase } from "@/integrations/supabase/client";
 import {
   type FhirPatient,
   searchPatients,
@@ -31,8 +30,6 @@ function toResource(v: PatientFormValues, id?: string): FhirPatient {
 }
 
 function PatientsPage() {
-  const navigate = useNavigate();
-  const [authReady, setAuthReady] = useState(false);
   const [patients, setPatients] = useState<FhirPatient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,17 +39,6 @@ function PatientsPage() {
   const [editing, setEditing] = useState<FhirPatient | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (!session) navigate({ to: "/auth" });
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) navigate({ to: "/auth" });
-      else setAuthReady(true);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [navigate]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search), 300);
@@ -76,8 +62,8 @@ function PatientsPage() {
   );
 
   useEffect(() => {
-    if (authReady) load(debounced);
-  }, [authReady, debounced, load]);
+    load(debounced);
+  }, [debounced, load]);
 
 
   const openCreate = () => {
@@ -125,16 +111,7 @@ function PatientsPage() {
             <img src={logo} alt="Patient Management" className="h-7 w-7" />
             <h1 className="text-lg font-semibold text-foreground">Patient Management</h1>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">FHIR R4</span>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-accent"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              Sign out
-            </button>
-          </div>
+          <span className="text-xs text-muted-foreground">FHIR R4</span>
         </div>
       </header>
 
