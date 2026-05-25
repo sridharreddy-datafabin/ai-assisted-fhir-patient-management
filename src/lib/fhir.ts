@@ -63,6 +63,12 @@ export interface FhirCondition {
   recordedDate?: string;
 }
 
+export interface FhirMedication {
+  resourceType: "Medication";
+  id?: string;
+  code?: FhirCodeableConcept;
+}
+
 export interface FhirMedicationRequest {
   resourceType: "MedicationRequest";
   id?: string;
@@ -71,6 +77,10 @@ export interface FhirMedicationRequest {
   authoredOn?: string;
   medicationCodeableConcept?: FhirCodeableConcept;
   medicationReference?: FhirReference;
+}
+
+export interface ResolvedMedicationRequest extends FhirMedicationRequest {
+  _resolvedMedication?: FhirMedication;
 }
 
 export interface FhirBundle<T> {
@@ -166,11 +176,43 @@ export async function getConditions(patientId: string): Promise<FhirCondition[]>
 
 export async function getMedications(
   patientId: string,
-): Promise<FhirMedicationRequest[]> {
-  const params = new URLSearchParams({ patient: patientId, _count: "200" });
+): Promise<ResolvedMedicationRequest[]> {
+  const params = new URLSearchParams({
+    patient: patientId,
+    _count: "200",
+    _include: "MedicationRequest:medication",
+  });
   const res = await fetch(`${BASE}/MedicationRequest?${params.toString()}`);
-  const bundle = (await handle(res)) as FhirBundle<FhirMedicationRequest>;
-  return entries(bundle);
+  const bundle = (await handle(res)) as FhirBundle<
+    FhirMedicationRequest | FhirMedication
+  >;
+  const all = entries(bundle);
+
+  // Index included Medication resources by id (and full reference form).
+  const meds = new Map<string, FhirMedication>();
+  for (const r of all) {
+    if (r.resourceType === "Medication" && r.id) {
+      meds.set(r.id, r);
+      meds.set(`Medication/${r.id}`, r);
+    }
+  }
+
+  // Return only MedicationRequests, with the resolved Medication attached.
+  return all
+    .filter((r): r is FhirMedicationRequest => r.resourceType === "MedicationRequest")
+    .map((mr) => {
+      const ref = mr.medicationReference?.reference;
+      let resolved: FhirMedication | undefined;
+      if (ref) {
+        // Reference can be "Medication/123" or a urn:uuid:... or contained "#id".
+        resolved = meds.get(ref);
+        if (!resolved) {
+          const id = ref.split("/").pop();
+          if (id) resolved = meds.get(id);
+        }
+      }
+      return { ...mr, _resolvedMedication: resolved };
+    });
 }
 
 export function formatPatientName(p: FhirPatient): string {
@@ -185,8 +227,9 @@ export function codeDisplay(c?: FhirCodeableConcept): string {
   return c.text || c.coding?.[0]?.display || c.coding?.[0]?.code || "—";
 }
 
-export function medicationName(m: FhirMedicationRequest): string {
+export function medicationName(m: ResolvedMedicationRequest): string {
   if (m.medicationCodeableConcept) return codeDisplay(m.medicationCodeableConcept);
+  if (m._resolvedMedication?.code) return codeDisplay(m._resolvedMedication.code);
   if (m.medicationReference)
     return m.medicationReference.display || m.medicationReference.reference || "—";
   return "—";

@@ -6,6 +6,7 @@ const ALLOWED_RESOURCES = new Set([
   "Observation",
   "Condition",
   "MedicationRequest",
+  "Medication",
   "Encounter",
   "DocumentReference",
 ]);
