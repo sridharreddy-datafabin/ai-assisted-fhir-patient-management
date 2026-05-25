@@ -52,7 +52,7 @@ function Section({
   children,
 }: {
   title: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
   children: React.ReactNode;
 }) {
   return (
