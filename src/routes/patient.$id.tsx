@@ -119,6 +119,7 @@ function PatientDetailPage() {
                 <TabsTrigger value="medications">Medications</TabsTrigger>
                 <TabsTrigger value="encounters">Encounters</TabsTrigger>
                 <TabsTrigger value="notes">Clinical Notes</TabsTrigger>
+                <TabsTrigger value="workflow">Workflow Summary</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
               </TabsList>
 
