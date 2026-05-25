@@ -1507,66 +1507,263 @@ export function ClinicalNotesTab({ patient }: Props) {
             </div>
           </div>
 
-          {previewsGenerated && previews.length > 0 && (
-            <>
-              {/* Preview summary */}
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
-                {[
-                  { label: "Total previews", value: previewSummary.total },
-                  { label: "Ready for SNOMED", value: previewSummary.ready },
-                  { label: "Needs review", value: previewSummary.needsReview },
-                  { label: "Low confidence", value: previewSummary.lowConfidence },
-                  { label: "Historical", value: previewSummary.historical },
-                  { label: "Uncertain", value: previewSummary.uncertain },
-                  { label: "Specificity review", value: previewSummary.specificityReview },
-                ].map((s) => (
-                  <div key={s.label} className="rounded-lg border border-border bg-muted/30 p-3">
-                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
-                    <div className="mt-1 text-xl font-bold text-foreground">{s.value}</div>
-                  </div>
-                ))}
-              </div>
+          <div className="flex items-start gap-3 rounded-lg border border-sky-300 bg-sky-50 p-3 text-sm text-sky-900 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-200">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              Clinician approval in this phase is session-only. Approved items are not
+              saved to the FHIR server and do not become part of the patient record.
+            </div>
+          </div>
 
-              {/* Preview cards */}
-              <div className="grid gap-3">
-                {previews.map(({ candidate: c, readiness, resource }) => {
-                  const expanded = expandedPreviews.has(c.id);
-                  const { clinical, verification } = statusesForContext(c.context, c.confidence);
-                  const warnings: string[] = [];
-                  if (c.confidence === "Low") warnings.push("Low confidence");
-                  if (
-                    c.specificity === "Generic" ||
-                    c.specificity === "Possible duplicate" ||
-                    c.specificity === "Needs specificity review"
-                  )
-                    warnings.push("Needs specificity review");
-                  if (c.context === "Historical") warnings.push("Historical");
-                  if (c.context === "Uncertain") warnings.push("Uncertain");
-                  if (c.overridden) warnings.push("Manually overridden contextual exclusion");
+          {previewsGenerated && previews.length > 0 && (() => {
+            const approvalSummary = {
+              total: previews.length,
+              notReviewed: previews.filter((p) => getApproval(p.candidate).status === "Not reviewed").length,
+              approved: previews.filter((p) => getApproval(p.candidate).status === "Approved for coding").length,
+              needsChanges: previews.filter((p) => getApproval(p.candidate).status === "Needs changes").length,
+              rejected: previews.filter((p) => getApproval(p.candidate).status === "Rejected").length,
+              lowConfidence: previews.filter((p) => p.candidate.confidence === "Low").length,
+              specificityReview: previews.filter(
+                (p) =>
+                  p.candidate.specificity === "Generic" ||
+                  p.candidate.specificity === "Possible duplicate" ||
+                  p.candidate.specificity === "Needs specificity review",
+              ).length,
+              uncertain: previews.filter((p) => p.candidate.context === "Uncertain").length,
+            };
 
-                  return (
-                    <div key={c.id} className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-                      <div className="flex items-start justify-between flex-wrap gap-2">
-                        <div className="space-y-1">
-                          <div className="text-sm font-semibold text-foreground">{c.text}</div>
-                          <div className="flex flex-wrap gap-2 text-xs">
-                            <ContextBadge value={c.context} />
-                            <ConfidenceBadge value={c.confidence} />
-                            <SpecificityBadge value={c.specificity} />
-                            <span className="inline-flex rounded-full bg-emerald-100 px-2 py-0.5 font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                              clinicalStatus: {clinical}
-                            </span>
-                            <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 font-medium text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300">
-                              verificationStatus: {verification}
-                            </span>
-                            <span className="inline-flex rounded-full bg-sky-100 px-2 py-0.5 font-medium text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
-                              {readiness}
-                            </span>
+            const filteredPreviews =
+              approvalFilter === "All"
+                ? previews
+                : previews.filter((p) => getApproval(p.candidate).status === approvalFilter);
+
+            const approvedPreviews = previews.filter(
+              (p) => getApproval(p.candidate).status === "Approved for coding",
+            );
+
+            async function copyApprovalPackage() {
+              const buildItem = (p: typeof previews[number]) => {
+                const a = getApproval(p.candidate);
+                const c = p.candidate;
+                return {
+                  candidateText: c.text,
+                  context: c.context,
+                  confidence: c.confidence,
+                  specificityStatus: c.specificity,
+                  sourcePhrase: c.sourcePhrase,
+                  suggestedSnomedSearchTerm: a.searchTerm,
+                  clinicalStatus: a.clinical,
+                  verificationStatus: a.verification,
+                  reviewPriority: a.priority,
+                  approvalStatus: a.status,
+                  reviewerNotes: a.notes,
+                  conditionPreviewJson: buildConditionPreviewWith(c, patient, a),
+                };
+              };
+              const payload = {
+                patientId: patient.id ?? null,
+                patientName: formatPatientName(patient),
+                generatedAt: new Date().toISOString(),
+                approvalSummary,
+                approvedItems: approvedPreviews.map(buildItem),
+                allPreviewItems: previews.map(buildItem),
+              };
+              try {
+                await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+                setCopiedApprovalPkg(true);
+                setTimeout(() => setCopiedApprovalPkg(false), 1500);
+              } catch {
+                /* noop */
+              }
+            }
+
+            return (
+              <>
+                {/* Preview + approval summary */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
+                  {[
+                    { label: "Total previews", value: approvalSummary.total },
+                    { label: "Not reviewed", value: approvalSummary.notReviewed },
+                    { label: "Approved", value: approvalSummary.approved },
+                    { label: "Needs changes", value: approvalSummary.needsChanges },
+                    { label: "Rejected", value: approvalSummary.rejected },
+                    { label: "Low confidence", value: approvalSummary.lowConfidence },
+                    { label: "Specificity review", value: approvalSummary.specificityReview },
+                    { label: "Uncertain context", value: approvalSummary.uncertain },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-lg border border-border bg-muted/30 p-3">
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+                      <div className="mt-1 text-xl font-bold text-foreground">{s.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Approval filters */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Filter:
+                  </span>
+                  {(["All", ...APPROVAL_STATUSES] as const).map((f) => (
+                    <Button
+                      key={f}
+                      size="sm"
+                      variant={approvalFilter === f ? "default" : "outline"}
+                      onClick={() => setApprovalFilter(f)}
+                    >
+                      {f === "All" ? "All" : `Show ${f.toLowerCase()}`}
+                    </Button>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={copyApprovalPackage}
+                    className="ml-auto"
+                  >
+                    {copiedApprovalPkg ? <Check className="mr-2 h-4 w-4" /> : <ClipboardList className="mr-2 h-4 w-4" />}
+                    {copiedApprovalPkg ? "Copied" : "Copy approval package JSON"}
+                  </Button>
+                </div>
+
+                {/* Preview cards */}
+                <div className="grid gap-3">
+                  {filteredPreviews.map(({ candidate: c, readiness }) => {
+                    const expanded = expandedPreviews.has(c.id);
+                    const a = getApproval(c);
+                    const resource = buildConditionPreviewWith(c, patient, a);
+                    const warnings: string[] = [];
+                    if (c.confidence === "Low") warnings.push("Low confidence — review before approval");
+                    if (
+                      c.specificity === "Generic" ||
+                      c.specificity === "Possible duplicate" ||
+                      c.specificity === "Needs specificity review"
+                    )
+                      warnings.push("Specificity review needed");
+                    if (c.context === "Historical") warnings.push("Historical");
+                    if (c.context === "Uncertain") warnings.push("Uncertain context — review before approval");
+                    if (c.context === "Negated") warnings.push("Negated — requires clinician override to approve");
+                    if (c.context === "Family history") warnings.push("Family history — requires clinician override to approve");
+                    if (c.overridden) warnings.push("Manually overridden contextual exclusion");
+
+                    return (
+                      <div key={c.id} className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                        <div className="flex items-start justify-between flex-wrap gap-2">
+                          <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <div className="text-sm font-semibold text-foreground">{c.text}</div>
+                              <ApprovalBadge value={a.status} />
+                            </div>
+                            <div className="flex flex-wrap gap-2 text-xs">
+                              <ContextBadge value={c.context} />
+                              <ConfidenceBadge value={c.confidence} />
+                              <SpecificityBadge value={c.specificity} />
+                              <span className="inline-flex rounded-full bg-sky-100 px-2 py-0.5 font-medium text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
+                                {readiness}
+                              </span>
+                              <span className="inline-flex rounded-full bg-muted px-2 py-0.5 font-medium text-foreground">
+                                Priority: {a.priority}
+                              </span>
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            Suggested SNOMED search term: <span className="font-medium text-foreground">{c.searchTerm}</span>
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" variant="outline" onClick={() => setApprovalStatusFor(c, "Approved for coding")}>
+                              <ThumbsUp className="mr-1 h-4 w-4" />
+                              Approve for coding
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setApprovalStatusFor(c, "Needs changes")}>
+                              <Edit3 className="mr-1 h-4 w-4" />
+                              Needs changes
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setApprovalStatusFor(c, "Rejected")}>
+                              <ThumbsDown className="mr-1 h-4 w-4" />
+                              Reject
+                            </Button>
+                            <Button size="sm" variant="ghost" onClick={() => resetApprovalFor(c)}>
+                              <RotateCcw className="mr-1 h-4 w-4" />
+                              Reset review
+                            </Button>
                           </div>
                         </div>
+
+                        {warnings.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {warnings.map((w) => (
+                              <span
+                                key={w}
+                                className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+                              >
+                                <AlertTriangle className="h-3 w-3" />
+                                {w}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Editable preview metadata */}
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                          <div>
+                            <label className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                              Clinical status
+                            </label>
+                            <select
+                              value={a.clinical}
+                              onChange={(e) => patchApproval(c, { clinical: e.target.value as ClinicalStatusCode })}
+                              className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                            >
+                              <option value="active">active</option>
+                              <option value="resolved">resolved</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                              Verification status
+                            </label>
+                            <select
+                              value={a.verification}
+                              onChange={(e) => patchApproval(c, { verification: e.target.value as VerificationStatusCode })}
+                              className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                            >
+                              <option value="provisional">provisional</option>
+                              <option value="differential">differential</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                              Suggested SNOMED search term
+                            </label>
+                            <Input
+                              value={a.searchTerm}
+                              onChange={(e) => patchApproval(c, { searchTerm: e.target.value })}
+                              className="mt-1 h-9 text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                              Review priority
+                            </label>
+                            <select
+                              value={a.priority}
+                              onChange={(e) => patchApproval(c, { priority: e.target.value as ReviewPriority })}
+                              className="mt-1 h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                            >
+                              {REVIEW_PRIORITIES.map((p) => (
+                                <option key={p} value={p}>{p}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                            Reviewer notes
+                          </label>
+                          <Textarea
+                            value={a.notes}
+                            onChange={(e) => patchApproval(c, { notes: e.target.value })}
+                            placeholder="Add review notes, coding instructions, or clarification needed..."
+                            className="mt-1 min-h-[70px] text-sm"
+                          />
+                        </div>
+
                         <div className="flex flex-wrap gap-2">
                           <Button size="sm" variant="outline" onClick={() => togglePreviewExpanded(c.id)}>
                             {expanded ? <ChevronUp className="mr-1 h-4 w-4" /> : <ChevronDown className="mr-1 h-4 w-4" />}
@@ -1581,42 +1778,85 @@ export function ClinicalNotesTab({ patient }: Props) {
                             Exclude from previews
                           </Button>
                         </div>
+
+                        {expanded && (
+                          <pre className="overflow-auto rounded border border-border bg-background p-3 text-xs leading-relaxed text-foreground">
+                            {JSON.stringify(resource, null, 2)}
+                          </pre>
+                        )}
                       </div>
-
-                      {warnings.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {warnings.map((w) => (
-                            <span
-                              key={w}
-                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
-                            >
-                              <AlertTriangle className="h-3 w-3" />
-                              {w}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {expanded && (
-                        <pre className="overflow-auto rounded border border-border bg-background p-3 text-xs leading-relaxed text-foreground">
-                          {JSON.stringify(resource, null, 2)}
-                        </pre>
-                      )}
+                    );
+                  })}
+                  {filteredPreviews.length === 0 && (
+                    <div className="rounded border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                      No previews match this approval filter.
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                </div>
 
-              <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                <FileJson className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>
-                  FHIR JSON dates are rendered in ISO format: YYYY-MM-DD. Condition.code
-                  uses the local placeholder system <code>urn:local:nlp-candidate</code>{" "}
-                  until SNOMED coding is implemented.
-                </span>
-              </div>
-            </>
-          )}
+                <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                  <FileJson className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    FHIR JSON dates are rendered in ISO format: YYYY-MM-DD. Condition.code
+                    uses the local placeholder system <code>urn:local:nlp-candidate</code>{" "}
+                    until SNOMED coding is implemented.
+                  </span>
+                </div>
+
+                {/* Approved for coding queue */}
+                <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+                  <div className="flex items-start justify-between flex-wrap gap-2">
+                    <div>
+                      <h4 className="text-base font-semibold text-foreground">Approved for coding queue</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Approved items are ready for future SNOMED coding review, but are
+                        not saved to FHIR in Phase 3 #6.
+                      </p>
+                    </div>
+                  </div>
+                  {approvedPreviews.length === 0 ? (
+                    <div className="rounded border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                      No previews have been approved for coding yet.
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Candidate</TableHead>
+                          <TableHead>Context</TableHead>
+                          <TableHead>Confidence</TableHead>
+                          <TableHead>Specificity</TableHead>
+                          <TableHead>Suggested SNOMED search</TableHead>
+                          <TableHead>Clinical</TableHead>
+                          <TableHead>Verification</TableHead>
+                          <TableHead>Reviewer notes</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {approvedPreviews.map(({ candidate: c }) => {
+                          const a = getApproval(c);
+                          return (
+                            <TableRow key={c.id}>
+                              <TableCell className="font-medium">{c.text}</TableCell>
+                              <TableCell><ContextBadge value={c.context} /></TableCell>
+                              <TableCell><ConfidenceBadge value={c.confidence} /></TableCell>
+                              <TableCell><SpecificityBadge value={c.specificity} /></TableCell>
+                              <TableCell className="text-sm">{a.searchTerm}</TableCell>
+                              <TableCell className="text-sm">{a.clinical}</TableCell>
+                              <TableCell className="text-sm">{a.verification}</TableCell>
+                              <TableCell className="max-w-xs text-xs text-muted-foreground">
+                                {a.notes || <span className="italic">—</span>}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </>
+            );
+          })()}
 
           {previewsGenerated && previews.length === 0 && (
             <div className="rounded border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
@@ -1638,8 +1878,8 @@ export function ClinicalNotesTab({ patient }: Props) {
             <Button disabled variant="outline">POST /Condition</Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Saving is disabled until SNOMED coding and clinician approval are
-            implemented.
+            Saving to FHIR is disabled until SNOMED coding, validation, and final
+            clinician sign-off are implemented.
           </p>
         </div>
       )}
