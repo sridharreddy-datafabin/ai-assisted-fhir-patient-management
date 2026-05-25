@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PatientIdRouteImport } from './routes/patient.$id'
+import { Route as ApiTerminologySplatRouteImport } from './routes/api/terminology/$'
 import { Route as ApiFhirSplatRouteImport } from './routes/api/fhir/$'
 
 const IndexRoute = IndexRouteImport.update({
@@ -23,6 +24,11 @@ const PatientIdRoute = PatientIdRouteImport.update({
   path: '/patient/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTerminologySplatRoute = ApiTerminologySplatRouteImport.update({
+  id: '/api/terminology/$',
+  path: '/api/terminology/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFhirSplatRoute = ApiFhirSplatRouteImport.update({
   id: '/api/fhir/$',
   path: '/api/fhir/$',
@@ -33,30 +39,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/patient/$id': typeof PatientIdRoute
   '/api/fhir/$': typeof ApiFhirSplatRoute
+  '/api/terminology/$': typeof ApiTerminologySplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/patient/$id': typeof PatientIdRoute
   '/api/fhir/$': typeof ApiFhirSplatRoute
+  '/api/terminology/$': typeof ApiTerminologySplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/patient/$id': typeof PatientIdRoute
   '/api/fhir/$': typeof ApiFhirSplatRoute
+  '/api/terminology/$': typeof ApiTerminologySplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/patient/$id' | '/api/fhir/$'
+  fullPaths: '/' | '/patient/$id' | '/api/fhir/$' | '/api/terminology/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/patient/$id' | '/api/fhir/$'
-  id: '__root__' | '/' | '/patient/$id' | '/api/fhir/$'
+  to: '/' | '/patient/$id' | '/api/fhir/$' | '/api/terminology/$'
+  id: '__root__' | '/' | '/patient/$id' | '/api/fhir/$' | '/api/terminology/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PatientIdRoute: typeof PatientIdRoute
   ApiFhirSplatRoute: typeof ApiFhirSplatRoute
+  ApiTerminologySplatRoute: typeof ApiTerminologySplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PatientIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/terminology/$': {
+      id: '/api/terminology/$'
+      path: '/api/terminology/$'
+      fullPath: '/api/terminology/$'
+      preLoaderRoute: typeof ApiTerminologySplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/fhir/$': {
       id: '/api/fhir/$'
       path: '/api/fhir/$'
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PatientIdRoute: PatientIdRoute,
   ApiFhirSplatRoute: ApiFhirSplatRoute,
+  ApiTerminologySplatRoute: ApiTerminologySplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
