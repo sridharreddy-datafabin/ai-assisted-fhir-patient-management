@@ -337,7 +337,7 @@ export function ConditionsTab({ patientId }: { patientId: string }) {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
