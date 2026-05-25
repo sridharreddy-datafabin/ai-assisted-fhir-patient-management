@@ -778,6 +778,82 @@ export function ClinicalNotesTab({ patient }: Props) {
     }
   }, [candidates, filter]);
 
+  // FHIR Condition preview computations
+  const eligiblePreviewCandidates = useMemo(
+    () => selectedQueue.filter((c) => isEligibleForPreview(c) && !excludedPreviewIds.has(c.id)),
+    [selectedQueue, excludedPreviewIds],
+  );
+
+  const previews = useMemo(
+    () =>
+      eligiblePreviewCandidates.map((c) => ({
+        candidate: c,
+        readiness: codingReadinessFor(c),
+        resource: buildConditionPreview(c, patient),
+      })),
+    [eligiblePreviewCandidates, patient],
+  );
+
+  const previewSummary = useMemo(() => {
+    const by = (fn: (r: CodingReadiness) => boolean) =>
+      previews.filter((p) => fn(p.readiness)).length;
+    return {
+      total: previews.length,
+      ready: by((r) => r === "Ready for SNOMED search"),
+      needsReview: by((r) => r === "Needs clinician review" || r === "Needs specificity review"),
+      lowConfidence: by((r) => r === "Low confidence"),
+      historical: previews.filter((p) => p.candidate.context === "Historical").length,
+      uncertain: previews.filter((p) => p.candidate.context === "Uncertain").length,
+      specificityReview: by((r) => r === "Needs specificity review"),
+    };
+  }, [previews]);
+
+  function generatePreviews() {
+    setExcludedPreviewIds(new Set());
+    setPreviewsGenerated(true);
+  }
+
+  function togglePreviewExpanded(id: string) {
+    setExpandedPreviews((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function excludeFromPreviews(id: string) {
+    setExcludedPreviewIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  }
+
+  async function copyPreviewJson(id: string, resource: Record<string, unknown>) {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(resource, null, 2));
+      setCopiedPreviewId(id);
+      setTimeout(() => setCopiedPreviewId(null), 1500);
+    } catch {
+      /* noop */
+    }
+  }
+
+  async function copyAllPreviews() {
+    try {
+      await navigator.clipboard.writeText(
+        JSON.stringify(previews.map((p) => p.resource), null, 2),
+      );
+      setCopiedAllPreviews(true);
+      setTimeout(() => setCopiedAllPreviews(false), 1500);
+    } catch {
+      /* noop */
+    }
+  }
+
+
+
   function loadSample(key: keyof typeof SAMPLES) {
     setNote(SAMPLES[key].text);
   }
