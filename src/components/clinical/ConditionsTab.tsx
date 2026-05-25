@@ -258,7 +258,7 @@ export function ConditionsTab({ patientId }: { patientId: string }) {
               const isOpen = expanded[id];
               const hasDetails = r.requestPath || r.message || r.display || r.rawBody;
               return (
-                <>
+                <Fragment key={id}>
                   <tr key={id} className="hover:bg-muted/40">
                     <td className="px-4 py-3 font-medium text-foreground">{codeDisplay(c.code)}</td>
                     <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{code ?? "—"}</td>
