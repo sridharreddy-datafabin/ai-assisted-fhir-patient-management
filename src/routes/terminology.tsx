@@ -132,6 +132,24 @@ function TerminologyPage() {
             <StatusBadge status={status} />
           </div>
 
+          {showHandoffBanner && (
+            <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              <div className="flex-1">
+                Search term received from NLP coding handoff. Click Search to query the
+                terminology server.
+              </div>
+              <button
+                onClick={() => setHandoffBannerDismissed(true)}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
+
           <div className="flex gap-2">
             <input
               value={term}
