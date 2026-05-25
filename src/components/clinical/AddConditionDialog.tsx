@@ -209,7 +209,7 @@ export function AddConditionDialog({
 
         <div className="space-y-5 px-6 py-5">
           <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
-            This workflow is preview-only. No Condition resource will be saved to the FHIR server in Phase 2 #5.
+            This workflow is preview-only. No Condition resource will be saved to the FHIR server in Phase 2 #6.
           </div>
 
           {/* 1. Patient context */}
