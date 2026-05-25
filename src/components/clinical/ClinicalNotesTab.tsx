@@ -1875,7 +1875,7 @@ export function ClinicalNotesTab({ patient }: Props) {
 
           <div className="flex flex-wrap gap-2">
             <Button disabled variant="outline">Save approved Conditions</Button>
-            <Button disabled variant="outline">POST /Condition</Button>
+            <Button disabled variant="outline">Create FHIR Conditions</Button>
           </div>
           <p className="text-xs text-muted-foreground">
             Saving to FHIR is disabled until SNOMED coding, validation, and final
