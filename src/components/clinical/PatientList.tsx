@@ -40,8 +40,10 @@ export function PatientList({
             <th className="px-4 py-3.5 font-bold">Name</th>
             <th className="px-4 py-3.5 font-bold">Gender</th>
             <th className="px-4 py-3.5 font-bold">Date of birth</th>
+            <th className="px-4 py-3.5 font-bold">Age</th>
             <th className="px-4 py-3.5 font-bold">FHIR ID</th>
             <th className="px-4 py-3.5 text-right font-bold">Actions</th>
+
           </tr>
         </thead>
         <tbody className="divide-y divide-border">
