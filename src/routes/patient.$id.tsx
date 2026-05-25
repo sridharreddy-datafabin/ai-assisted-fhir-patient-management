@@ -14,6 +14,7 @@ import { VitalsTab } from "@/components/clinical/VitalsTab";
 import { ConditionsTab } from "@/components/clinical/ConditionsTab";
 import { MedicationsTab } from "@/components/clinical/MedicationsTab";
 import { OverviewTab } from "@/components/clinical/OverviewTab";
+import { ClinicalNotesTab } from "@/components/clinical/ClinicalNotesTab";
 
 
 export const Route = createFileRoute("/patient/$id")({
