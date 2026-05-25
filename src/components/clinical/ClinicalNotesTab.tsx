@@ -416,6 +416,131 @@ function extractCandidates(note: string): Candidate[] {
   return annotateSpecificity(sortedByPos);
 }
 
+type ClinicalStatusCode = "active" | "resolved";
+type VerificationStatusCode = "provisional" | "differential";
+
+function statusesForContext(
+  ctx: Context,
+  confidence: Confidence,
+): { clinical: ClinicalStatusCode; verification: VerificationStatusCode } {
+  if (confidence === "Low") return { clinical: "active", verification: "provisional" };
+  switch (ctx) {
+    case "Historical":
+      return { clinical: "resolved", verification: "provisional" };
+    case "Uncertain":
+      return { clinical: "active", verification: "differential" };
+    case "Present":
+    default:
+      return { clinical: "active", verification: "provisional" };
+  }
+}
+
+const CLINICAL_DISPLAY: Record<ClinicalStatusCode, string> = {
+  active: "Active",
+  resolved: "Resolved",
+};
+const VERIFICATION_DISPLAY: Record<VerificationStatusCode, string> = {
+  provisional: "Provisional",
+  differential: "Differential",
+};
+
+function todayIsoDate(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function buildConditionPreview(
+  c: Candidate,
+  patient: FhirPatient,
+): Record<string, unknown> {
+  const { clinical, verification } = statusesForContext(c.context, c.confidence);
+  const localCode = `nlp-${c.id}`.replace(/[^a-zA-Z0-9_-]/g, "-");
+  return {
+    resourceType: "Condition",
+    clinicalStatus: {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          code: clinical,
+          display: CLINICAL_DISPLAY[clinical],
+        },
+      ],
+    },
+    verificationStatus: {
+      coding: [
+        {
+          system: "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+          code: verification,
+          display: VERIFICATION_DISPLAY[verification],
+        },
+      ],
+    },
+    code: {
+      text: c.text,
+      coding: [
+        {
+          system: "urn:local:nlp-candidate",
+          code: localCode,
+          display: c.text,
+        },
+      ],
+    },
+    subject: {
+      reference: patient.id ? `Patient/${patient.id}` : "Patient/unknown",
+      display: formatPatientName(patient),
+    },
+    recordedDate: todayIsoDate(),
+    note: [
+      {
+        text: "Preview generated from NLP candidate. Requires clinician review and SNOMED coding before saving.",
+      },
+    ],
+    extension: [
+      {
+        url: "https://example.org/fhir/StructureDefinition/nlp-source-context",
+        valueString: c.context,
+      },
+      {
+        url: "https://example.org/fhir/StructureDefinition/nlp-confidence",
+        valueString: c.confidence,
+      },
+      {
+        url: "https://example.org/fhir/StructureDefinition/nlp-source-phrase",
+        valueString: c.sourcePhrase,
+      },
+      {
+        url: "https://example.org/fhir/StructureDefinition/nlp-specificity-status",
+        valueString: c.specificity,
+      },
+      {
+        url: "https://example.org/fhir/StructureDefinition/nlp-suggested-snomed-search-term",
+        valueString: c.searchTerm,
+      },
+    ],
+  };
+}
+
+const ELIGIBLE_READINESS = new Set<CodingReadiness>([
+  "Ready for SNOMED search",
+  "Needs specificity review",
+  "Needs clinician review",
+  "Uncertain context",
+  "Low confidence",
+]);
+
+function isEligibleForPreview(c: Candidate): boolean {
+  if (!c.included) return false;
+  if (c.status === "Excluded" || c.status === "Excluded by context") return false;
+  if (c.context === "Negated" || c.context === "Family history") {
+    if (!c.overridden) return false;
+  }
+  const r = codingReadinessFor(c);
+  return ELIGIBLE_READINESS.has(r);
+}
+
 function ConfidenceBadge({ value }: { value: Confidence }) {
   const map: Record<Confidence, string> = {
     High: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300",
