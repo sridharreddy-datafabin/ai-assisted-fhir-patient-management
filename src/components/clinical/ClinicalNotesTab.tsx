@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { publishWorkflowSnapshot, clearWorkflowSnapshot } from "@/lib/workflow-store";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1130,6 +1131,84 @@ export function ClinicalNotesTab({ patient }: Props) {
       });
     }
   }
+
+  // Publish workflow snapshot for the Workflow Summary tab (session-only).
+  const snapshot = useMemo(() => {
+    const approvalValues = Array.from(approvals.values());
+    const approvedForCoding = approvalValues.filter((a) => a.status === "Approved for coding").length;
+    const needsChanges = approvalValues.filter((a) => a.status === "Needs changes").length;
+    const rejected = approvalValues.filter((a) => a.status === "Rejected").length;
+    const notReviewed = Math.max(0, previews.length - approvedForCoding - needsChanges - rejected);
+
+    const queueValues = Array.from(codingQueue.values());
+    const inCodingQueue = queueValues.filter(
+      (q) => q.codingStatus !== "Manually removed" && q.codingStatus !== "Coding deferred",
+    ).length;
+    const codingDeferred = queueValues.filter((q) => q.codingStatus === "Coding deferred").length;
+    const codingRemoved = queueValues.filter((q) => q.codingStatus === "Manually removed").length;
+
+    // Eligible for sign-off: approved + in queue + not negated/family.
+    const approvedPreviewCandidates = previews.filter(
+      (p) => (approvals.get(p.candidate.id)?.status ?? "Not reviewed") === "Approved for coding",
+    );
+    const eligibleSignOff = approvedPreviewCandidates.filter((p) => {
+      const q = codingQueue.get(p.candidate.id);
+      if (!q) return false;
+      if (q.codingStatus === "Manually removed" || q.codingStatus === "Coding deferred") return false;
+      if (p.candidate.context === "Negated" || p.candidate.context === "Family history") return false;
+      return true;
+    });
+    const signOffValues = eligibleSignOff.map((p) => signOffs.get(p.candidate.id) ?? { coding: "Pending", validation: "Pending", signOff: "Not signed" as const });
+    const signedOff = signOffValues.filter((s) => s.signOff === "Signed off").length;
+    const needsSignOffReview = signOffValues.filter((s) => s.signOff === "Needs review").length;
+    const notSigned = signOffValues.filter((s) => s.signOff === "Not signed").length;
+
+    return {
+      updatedAt: new Date().toISOString(),
+      totalCandidates: candidates.length,
+      contextCounts: {
+        Present: summary.present,
+        Negated: summary.negated,
+        Historical: summary.historical,
+        "Family history": summary.family,
+        Uncertain: summary.uncertain,
+      },
+      included: summary.included,
+      excluded: summary.excluded,
+      reviewedCount: summary.reviewed,
+      needsReviewCount: candidates.filter((c) => c.status === "Needs review").length,
+      previewsGenerated,
+      previewsCount: previews.length,
+      approvedForCoding,
+      needsChanges,
+      rejected,
+      notReviewed,
+      inCodingQueue,
+      codingDeferred,
+      codingRemoved,
+      eligibleForSignOff: eligibleSignOff.length,
+      signedOff,
+      needsSignOffReview,
+      notSigned,
+      hasOverlapWarnings: anyOverlapIncluded,
+      hasLowConfidence: candidates.some((c) => c.confidence === "Low" && isActivelyIncluded(c)),
+      hasNegatedExcluded: candidates.some((c) => c.context === "Negated" && !c.overridden),
+      hasFamilyHistoryExcluded: candidates.some((c) => c.context === "Family history" && !c.overridden),
+    };
+  }, [candidates, approvals, codingQueue, signOffs, previews, previewsGenerated, summary, anyOverlapIncluded]);
+
+  useEffect(() => {
+    const pid = patient.id;
+    if (!pid) return;
+    publishWorkflowSnapshot(pid, snapshot);
+  }, [patient.id, snapshot]);
+
+  useEffect(() => {
+    const pid = patient.id;
+    return () => {
+      if (pid) clearWorkflowSnapshot(pid);
+    };
+  }, [patient.id]);
 
   return (
     <div className="space-y-6">

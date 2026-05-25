@@ -15,6 +15,7 @@ import { ConditionsTab } from "@/components/clinical/ConditionsTab";
 import { MedicationsTab } from "@/components/clinical/MedicationsTab";
 import { OverviewTab } from "@/components/clinical/OverviewTab";
 import { ClinicalNotesTab } from "@/components/clinical/ClinicalNotesTab";
+import { WorkflowSummaryTab } from "@/components/clinical/WorkflowSummaryTab";
 
 
 export const Route = createFileRoute("/patient/$id")({
@@ -118,6 +119,7 @@ function PatientDetailPage() {
                 <TabsTrigger value="medications">Medications</TabsTrigger>
                 <TabsTrigger value="encounters">Encounters</TabsTrigger>
                 <TabsTrigger value="notes">Clinical Notes</TabsTrigger>
+                <TabsTrigger value="workflow">Workflow Summary</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
               </TabsList>
 
@@ -141,6 +143,9 @@ function PatientDetailPage() {
               </TabsContent>
               <TabsContent value="notes">
                 <ClinicalNotesTab patient={data} />
+              </TabsContent>
+              <TabsContent value="workflow">
+                <WorkflowSummaryTab patient={data} />
               </TabsContent>
               <TabsContent value="analytics">
                 <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
