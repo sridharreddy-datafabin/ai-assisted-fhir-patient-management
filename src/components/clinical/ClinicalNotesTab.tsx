@@ -759,6 +759,45 @@ export function ClinicalNotesTab({ patient }: Props) {
   );
   const [approvalFilter, setApprovalFilter] = useState<"All" | ApprovalStatus>("All");
   const [copiedApprovalPkg, setCopiedApprovalPkg] = useState(false);
+  const [codingQueue, setCodingQueue] = useState<globalThis.Map<string, CodingQueueItem>>(
+    new globalThis.Map(),
+  );
+  const [copiedHandoff, setCopiedHandoff] = useState(false);
+
+  function sendApprovedToCodingQueue(approvedIds: string[]) {
+    setCodingQueue((prev) => {
+      const next = new globalThis.Map(prev);
+      const now = new Date().toISOString();
+      approvedIds.forEach((id) => {
+        if (!next.has(id)) {
+          next.set(id, {
+            candidateId: id,
+            codingStatus: "Awaiting SNOMED search",
+            addedAt: now,
+          });
+        }
+      });
+      return next;
+    });
+  }
+
+  function updateCodingStatus(id: string, codingStatus: SnomedCodingStatus) {
+    setCodingQueue((prev) => {
+      const next = new globalThis.Map(prev);
+      const cur = next.get(id);
+      if (!cur) return prev;
+      next.set(id, { ...cur, codingStatus });
+      return next;
+    });
+  }
+
+  function removeFromCodingQueue(id: string) {
+    setCodingQueue((prev) => {
+      const next = new globalThis.Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }
 
   function getApproval(c: Candidate): ApprovalRecord {
     return approvals.get(c.id) ?? defaultApprovalFor(c);
