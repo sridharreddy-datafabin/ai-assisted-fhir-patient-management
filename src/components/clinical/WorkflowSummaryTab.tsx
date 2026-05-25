@@ -410,7 +410,7 @@ export function WorkflowSummaryTab({ patient }: Props) {
         <h3 className="mb-3 text-sm font-semibold text-foreground">Status cards</h3>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {cards.map((c) => (
-            <StatusCard key={c.key} {...c} />
+            <StatusCard key={c.key} title={c.title} status={c.status} message={c.message} bullets={c.bullets} />
           ))}
         </div>
       </section>
