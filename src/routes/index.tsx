@@ -109,14 +109,14 @@ function PatientsPage() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 shadow-sm ring-1 ring-primary/20">
-              <img src={logo} alt="" className="h-5 w-5 brightness-0 invert" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-sm ring-1 ring-primary/20">
+              <img src={logo} alt="" className="h-6 w-6" />
             </div>
             <div className="flex flex-col leading-tight">
-              <h1 className="text-sm font-semibold tracking-tight text-foreground">
+              <h1 className="text-base font-bold tracking-tight text-primary">
                 Patient Management
               </h1>
-              <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 Clinical Workspace
               </span>
             </div>
@@ -124,15 +124,15 @@ function PatientsPage() {
           <nav className="flex items-center gap-1">
             <Link
               to="/terminology"
-              className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              activeProps={{ className: "rounded-md px-3 py-1.5 text-xs font-medium bg-accent text-accent-foreground" }}
+              className="rounded-md px-3 py-1.5 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-accent-foreground"
+              activeProps={{ className: "rounded-md px-3 py-1.5 text-sm font-semibold bg-accent text-accent-foreground" }}
             >
               Terminology Search
             </Link>
             <Link
               to="/terminology-configuration"
-              className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              activeProps={{ className: "rounded-md px-3 py-1.5 text-xs font-medium bg-accent text-accent-foreground" }}
+              className="rounded-md px-3 py-1.5 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-accent-foreground"
+              activeProps={{ className: "rounded-md px-3 py-1.5 text-sm font-semibold bg-accent text-accent-foreground" }}
             >
               Configuration
             </Link>
