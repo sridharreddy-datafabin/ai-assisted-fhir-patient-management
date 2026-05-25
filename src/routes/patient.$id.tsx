@@ -128,7 +128,7 @@ function PatientDetailPage() {
                 <VitalsTab patientId={id} />
               </TabsContent>
               <TabsContent value="conditions">
-                <ConditionsTab patientId={id} />
+                <ConditionsTab patientId={id} patient={data} />
               </TabsContent>
               <TabsContent value="medications">
                 <MedicationsTab patientId={id} />

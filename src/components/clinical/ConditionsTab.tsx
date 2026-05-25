@@ -1,8 +1,9 @@
 import { useState, useMemo, Fragment } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight, Loader2, ShieldCheck, ShieldAlert, ShieldX, Shield, HelpCircle } from "lucide-react";
-import { getConditions, codeDisplay, type FhirCondition } from "@/lib/fhir";
+import { ChevronDown, ChevronRight, Loader2, ShieldCheck, ShieldAlert, ShieldX, Shield, HelpCircle, Plus } from "lucide-react";
+import { getConditions, codeDisplay, type FhirCondition, type FhirPatient } from "@/lib/fhir";
 import { LoadingState, ErrorState, EmptyState } from "./StateViews";
+import { AddConditionDialog } from "./AddConditionDialog";
 
 const SNOMED_SYSTEM = "http://snomed.info/sct";
 
@@ -207,7 +208,7 @@ function ServiceBanner({ status }: { status: ServiceStatus }) {
   );
 }
 
-export function ConditionsTab({ patientId }: { patientId: string }) {
+export function ConditionsTab({ patientId, patient }: { patientId: string; patient?: FhirPatient }) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["conditions", patientId],
     queryFn: () => getConditions(patientId),
@@ -217,6 +218,7 @@ export function ConditionsTab({ patientId }: { patientId: string }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [bulkRunning, setBulkRunning] = useState(false);
   const [filter, setFilter] = useState<FilterValue>("all");
+  const [addOpen, setAddOpen] = useState(false);
 
   const conditions = data ?? [];
 
@@ -329,14 +331,25 @@ export function ConditionsTab({ patientId }: { patientId: string }) {
             <span><b className="text-foreground">{summary.missingCode}</b> missing code</span>
             <span className="text-rose-700 dark:text-rose-300"><b>{summary.error}</b> error</span>
           </div>
-          <button
-            onClick={runAll}
-            disabled={bulkRunning || visibleValidatableCount === 0}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-          >
-            {bulkRunning && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Validate all visible conditions ({visibleValidatableCount})
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={runAll}
+              disabled={bulkRunning || visibleValidatableCount === 0}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              {bulkRunning && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              Validate all visible conditions ({visibleValidatableCount})
+            </button>
+            {patient && (
+              <button
+                onClick={() => setAddOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add coded condition
+              </button>
+            )}
+          </div>
         </div>
         <p className="mt-2 text-[11px] italic text-muted-foreground">
           Validation results are session-only and are not saved to the FHIR server.
@@ -501,6 +514,10 @@ export function ConditionsTab({ patientId }: { patientId: string }) {
           </tbody>
         </table>
       </div>
+
+      {addOpen && patient && (
+        <AddConditionDialog patient={patient} onClose={() => setAddOpen(false)} />
+      )}
     </div>
   );
 }
