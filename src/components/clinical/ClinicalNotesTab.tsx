@@ -289,6 +289,7 @@ function extractCandidates(note: string): Candidate[] {
           status: defs.status,
           included: defs.included,
           overridden: false,
+          searchTerm: suggestSearchTerm(note.slice(idx, end)),
         });
       }
       idx = end;
