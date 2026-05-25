@@ -124,6 +124,110 @@ function buildChartData(rows: VitalRow[]): { data: ChartPoint[]; series: string[
   };
 }
 
+function VitalCard({
+  label,
+  rows,
+  colors,
+}: {
+  label: string;
+  rows: VitalRow[];
+  colors: string[];
+}) {
+  const [view, setView] = useState<"chart" | "table">("chart");
+  const { data: chartData, series } = useMemo(() => buildChartData(rows), [rows]);
+  const unit = rows[0]?.unit ?? "";
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-4 shadow-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h4 className="text-sm font-semibold text-foreground">{label}</h4>
+          {unit && <p className="text-xs text-muted-foreground">{unit}</p>}
+        </div>
+        <div className="inline-flex rounded-md border border-border bg-background p-0.5">
+          <button
+            onClick={() => setView("chart")}
+            className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
+              view === "chart"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BarChart3 className="h-3 w-3" />
+            Chart
+          </button>
+          <button
+            onClick={() => setView("table")}
+            className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors ${
+              view === "table"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <TableIcon className="h-3 w-3" />
+            Table
+          </button>
+        </div>
+      </div>
+
+      {view === "chart" ? (
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+              <Tooltip
+                contentStyle={{
+                  background: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: 6,
+                  fontSize: 12,
+                }}
+              />
+              {series.length > 1 && <Legend wrapperStyle={{ fontSize: 11 }} />}
+              {series.map((s, i) => (
+                <Line
+                  key={s}
+                  type="monotone"
+                  dataKey={s}
+                  stroke={colors[i % colors.length]}
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                  connectNulls
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="max-h-56 overflow-auto">
+          <table className="w-full text-xs">
+            <thead className="sticky top-0 bg-muted/60 text-left uppercase tracking-wider text-muted-foreground">
+              <tr>
+                <th className="px-3 py-2 font-bold">Date</th>
+                <th className="px-3 py-2 font-bold">Metric</th>
+                <th className="px-3 py-2 font-bold">Value</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((r, i) => (
+                <tr key={i} className="hover:bg-muted/40">
+                  <td className="px-3 py-1.5 text-muted-foreground">{r.date.slice(0, 10)}</td>
+                  <td className="px-3 py-1.5 text-foreground">{r.label}</td>
+                  <td className="px-3 py-1.5 text-foreground">
+                    {r.value} <span className="text-muted-foreground">{r.unit}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function VitalsTab({ patientId }: { patientId: string }) {
   const [view, setView] = useState<"chart" | "table">("chart");
   const { data, isLoading, error, refetch } = useQuery({
@@ -133,6 +237,22 @@ export function VitalsTab({ patientId }: { patientId: string }) {
 
   const rows = useMemo(() => (data ? extractRows(data) : []), [data]);
   const { data: chartData, series } = useMemo(() => buildChartData(rows), [rows]);
+
+  // Group rows by vital code/label for per-vital charts.
+  const groups = useMemo(() => {
+    const map = new Map<string, { label: string; rows: VitalRow[] }>();
+    for (const r of rows) {
+      // Combine systolic + diastolic into a single "Blood pressure" card.
+      const key =
+        r.code === "8480-6" || r.code === "8462-4" ? "blood-pressure" : r.code;
+      const groupLabel =
+        key === "blood-pressure" ? "Blood pressure" : r.label;
+      const g = map.get(key) ?? { label: groupLabel, rows: [] };
+      g.rows.push(r);
+      map.set(key, g);
+    }
+    return Array.from(map.values()).filter((g) => g.rows.length > 0);
+  }, [rows]);
 
   if (isLoading) return <LoadingState label="Loading vitals..." />;
   if (error)
@@ -146,7 +266,7 @@ export function VitalsTab({ patientId }: { patientId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground">Vital signs</h3>
+        <h3 className="text-sm font-semibold text-foreground">Vital signs — combined</h3>
         <div className="inline-flex rounded-md border border-border bg-card p-0.5">
           <button
             onClick={() => setView("chart")}
@@ -231,6 +351,25 @@ export function VitalsTab({ patientId }: { patientId: string }) {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {groups.length > 0 && (
+        <div className="space-y-3 pt-4">
+          <h3 className="text-sm font-semibold text-foreground">Individual vitals</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {groups.map((g, i) => (
+              <VitalCard
+                key={g.label}
+                label={g.label}
+                rows={g.rows}
+                colors={[
+                  SERIES_COLORS[i % SERIES_COLORS.length],
+                  SERIES_COLORS[(i + 3) % SERIES_COLORS.length],
+                ]}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>
