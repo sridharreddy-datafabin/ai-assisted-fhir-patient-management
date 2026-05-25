@@ -370,6 +370,54 @@ export function ClinicalNotesTab({ patient }: Props) {
   const [note, setNote] = useState("");
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [filter, setFilter] = useState<FilterKey>("All");
+  const [copied, setCopied] = useState(false);
+
+  const selectedQueue = useMemo(() => {
+    return candidates.filter((c) => {
+      if (!c.included) return false;
+      if (c.status === "Excluded" || c.status === "Excluded by context") return false;
+      const contextuallyExcluded =
+        c.context === "Negated" || c.context === "Family history";
+      // Excluded by context unless manually overridden (overridden=true)
+      if (contextuallyExcluded && !c.overridden) return false;
+      return true;
+    });
+  }, [candidates]);
+
+  const queueSummary = useMemo(() => {
+    const by = (fn: (c: Candidate) => boolean) => selectedQueue.filter(fn).length;
+    return {
+      included: selectedQueue.length,
+      ready: by((c) => codingReadinessFor(c) === "Ready for SNOMED search"),
+      needsReview: by((c) => codingReadinessFor(c) === "Needs clinician review"),
+      lowConfidence: by((c) => codingReadinessFor(c) === "Low confidence"),
+      uncertain: by((c) => codingReadinessFor(c) === "Uncertain context"),
+      excludedByContext: by((c) => codingReadinessFor(c) === "Excluded by context"),
+    };
+  }, [selectedQueue]);
+
+  async function copyQueueJson() {
+    const payload = selectedQueue.map((c) => ({
+      patientId: patient.id ?? null,
+      patientName: formatPatientName(patient),
+      candidateText: c.text,
+      type: c.type,
+      context: c.context,
+      confidence: c.confidence,
+      sourcePhrase: c.sourcePhrase,
+      suggestedSnomedSearchTerm: c.searchTerm,
+      codingReadiness: codingReadinessFor(c),
+      included: c.included,
+      reviewed: c.status === "Reviewed",
+    }));
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* noop */
+    }
+  }
 
   const summary = useMemo(() => {
     const by = (fn: (c: Candidate) => boolean) => candidates.filter(fn).length;
