@@ -5,6 +5,7 @@ import logo from "@/assets/logo.png";
 import {
   getPatient,
   formatPatientName,
+  calculateAge,
   type FhirPatient,
 } from "@/lib/fhir";
 import { LoadingState, ErrorState } from "@/components/clinical/StateViews";
@@ -12,6 +13,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { VitalsTab } from "@/components/clinical/VitalsTab";
 import { ConditionsTab } from "@/components/clinical/ConditionsTab";
 import { MedicationsTab } from "@/components/clinical/MedicationsTab";
+import { OverviewTab } from "@/components/clinical/OverviewTab";
+
 
 export const Route = createFileRoute("/patient/$id")({
   component: PatientDetailPage,
