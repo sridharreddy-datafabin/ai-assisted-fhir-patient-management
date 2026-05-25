@@ -549,6 +549,19 @@ const REVIEW_PRIORITIES: ReviewPriority[] = [
   "Do not code",
 ];
 
+type SnomedCodingStatus =
+  | "Awaiting SNOMED search"
+  | "Search opened"
+  | "Authentication required"
+  | "Coding deferred"
+  | "Manually removed";
+
+interface CodingQueueItem {
+  candidateId: string;
+  codingStatus: SnomedCodingStatus;
+  addedAt: string;
+}
+
 interface ApprovalRecord {
   status: ApprovalStatus;
   notes: string;
