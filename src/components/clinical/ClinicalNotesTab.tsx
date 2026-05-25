@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,8 +15,10 @@ import {
   formatPatientName,
   type FhirPatient,
 } from "@/lib/fhir";
-import { AlertTriangle, ShieldCheck, Sparkles, Info, Copy, Check, ChevronDown, ChevronUp, FileJson, Ban, ThumbsUp, ThumbsDown, RotateCcw, ClipboardList, Edit3 } from "lucide-react";
+import { AlertTriangle, ShieldCheck, Sparkles, Info, Copy, Check, ChevronDown, ChevronUp, FileJson, Ban, ThumbsUp, ThumbsDown, RotateCcw, ClipboardList, Edit3, ExternalLink, Send, Clock, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+
+
 
 interface Props {
   patient: FhirPatient;
@@ -549,6 +552,19 @@ const REVIEW_PRIORITIES: ReviewPriority[] = [
   "Do not code",
 ];
 
+type SnomedCodingStatus =
+  | "Awaiting SNOMED search"
+  | "Search opened"
+  | "Authentication required"
+  | "Coding deferred"
+  | "Manually removed";
+
+interface CodingQueueItem {
+  candidateId: string;
+  codingStatus: SnomedCodingStatus;
+  addedAt: string;
+}
+
 interface ApprovalRecord {
   status: ApprovalStatus;
   notes: string;
@@ -689,6 +705,23 @@ function SpecificityBadge({ value }: { value: SpecificityStatus }) {
   );
 }
 
+function CodingStatusBadge({ value }: { value: SnomedCodingStatus }) {
+  const map: Record<SnomedCodingStatus, string> = {
+    "Awaiting SNOMED search": "bg-slate-100 text-slate-800 dark:bg-slate-800/50 dark:text-slate-200",
+    "Search opened": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+    "Authentication required": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    "Coding deferred": "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+    "Manually removed": "bg-muted text-muted-foreground",
+  };
+  return (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${map[value]}`}>
+      {value}
+    </span>
+  );
+}
+
+
+
 type FilterKey =
   | "All"
   | "Present"
@@ -743,6 +776,45 @@ export function ClinicalNotesTab({ patient }: Props) {
   );
   const [approvalFilter, setApprovalFilter] = useState<"All" | ApprovalStatus>("All");
   const [copiedApprovalPkg, setCopiedApprovalPkg] = useState(false);
+  const [codingQueue, setCodingQueue] = useState<globalThis.Map<string, CodingQueueItem>>(
+    new globalThis.Map(),
+  );
+  const [copiedHandoff, setCopiedHandoff] = useState(false);
+
+  function sendApprovedToCodingQueue(approvedIds: string[]) {
+    setCodingQueue((prev) => {
+      const next = new globalThis.Map(prev);
+      const now = new Date().toISOString();
+      approvedIds.forEach((id) => {
+        if (!next.has(id)) {
+          next.set(id, {
+            candidateId: id,
+            codingStatus: "Awaiting SNOMED search",
+            addedAt: now,
+          });
+        }
+      });
+      return next;
+    });
+  }
+
+  function updateCodingStatus(id: string, codingStatus: SnomedCodingStatus) {
+    setCodingQueue((prev) => {
+      const next = new globalThis.Map(prev);
+      const cur = next.get(id);
+      if (!cur) return prev;
+      next.set(id, { ...cur, codingStatus });
+      return next;
+    });
+  }
+
+  function removeFromCodingQueue(id: string) {
+    setCodingQueue((prev) => {
+      const next = new globalThis.Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }
 
   function getApproval(c: Candidate): ApprovalRecord {
     return approvals.get(c.id) ?? defaultApprovalFor(c);
@@ -1854,6 +1926,225 @@ export function ClinicalNotesTab({ patient }: Props) {
                     </Table>
                   )}
                 </div>
+
+                {/* SNOMED coding handoff */}
+                {(() => {
+                  const approvedIds = approvedPreviews.map((p) => p.candidate.id);
+                  const queueItems = approvedIds
+                    .map((id) => {
+                      const queued = codingQueue.get(id);
+                      if (!queued) return null;
+                      const previewEntry = previews.find((p) => p.candidate.id === id);
+                      if (!previewEntry) return null;
+                      return { queued, candidate: previewEntry.candidate };
+                    })
+                    .filter((x): x is { queued: CodingQueueItem; candidate: Candidate } => x !== null);
+
+                  const countByStatus = (s: SnomedCodingStatus) =>
+                    queueItems.filter((q) => q.queued.codingStatus === s).length;
+
+                  const handoffSummary = {
+                    approvedItems: approvedIds.length,
+                    inCodingQueue: queueItems.length,
+                    awaitingSearch: countByStatus("Awaiting SNOMED search"),
+                    searchOpened: countByStatus("Search opened"),
+                    authRequired: countByStatus("Authentication required"),
+                    codingDeferred: countByStatus("Coding deferred"),
+                    removed: countByStatus("Manually removed"),
+                  };
+
+                  async function copyHandoffJson() {
+                    const payload = {
+                      patientId: patient.id ?? null,
+                      patientName: formatPatientName(patient),
+                      generatedAt: new Date().toISOString(),
+                      terminologyStatus: "credentials not configured (preview-only handoff)",
+                      handoffSummary,
+                      codingQueue: queueItems.map(({ queued, candidate: c }) => {
+                        const a = getApproval(c);
+                        return {
+                          candidateText: c.text,
+                          suggestedSnomedSearchTerm: a.searchTerm,
+                          context: c.context,
+                          confidence: c.confidence,
+                          specificityStatus: c.specificity,
+                          clinicalStatus: a.clinical,
+                          verificationStatus: a.verification,
+                          reviewerNotes: a.notes,
+                          codingStatus: queued.codingStatus,
+                          sourceConditionPreviewJson: buildConditionPreviewWith(c, patient, a),
+                        };
+                      }),
+                    };
+                    try {
+                      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+                      setCopiedHandoff(true);
+                      setTimeout(() => setCopiedHandoff(false), 1500);
+                    } catch {
+                      /* noop */
+                    }
+                  }
+
+                  return (
+                    <div className="rounded-lg border border-border bg-card p-4 space-y-4">
+                      <div className="flex items-start justify-between flex-wrap gap-2">
+                        <div>
+                          <h4 className="text-base font-semibold text-foreground">SNOMED coding handoff</h4>
+                          <p className="text-xs text-muted-foreground">
+                            Prepare approved items for SNOMED concept lookup. Nothing is
+                            searched or coded automatically.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => sendApprovedToCodingQueue(approvedIds)}
+                            disabled={approvedIds.length === 0}
+                          >
+                            <Send className="mr-1 h-4 w-4" />
+                            Send approved items to SNOMED coding queue
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={copyHandoffJson}
+                            disabled={queueItems.length === 0}
+                          >
+                            {copiedHandoff ? <Check className="mr-1 h-4 w-4" /> : <ClipboardList className="mr-1 h-4 w-4" />}
+                            {copiedHandoff ? "Copied" : "Copy SNOMED handoff JSON"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Safety banner */}
+                      <div className="flex items-start gap-2 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                        <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          SNOMED coding handoff is session-only. No terminology search is
+                          run automatically, no SNOMED code is assigned automatically, and
+                          no FHIR record is saved.
+                        </span>
+                      </div>
+
+                      {/* Auth banner */}
+                      <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          Terminology credentials are not configured yet. You can prepare
+                          and open search terms, but live SNOMED results may return
+                          authentication required.
+                        </span>
+                      </div>
+
+                      {/* Summary cards */}
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                        {[
+                          { label: "Approved", value: handoffSummary.approvedItems },
+                          { label: "In queue", value: handoffSummary.inCodingQueue },
+                          { label: "Awaiting search", value: handoffSummary.awaitingSearch },
+                          { label: "Search opened", value: handoffSummary.searchOpened },
+                          { label: "Auth required", value: handoffSummary.authRequired },
+                          { label: "Deferred", value: handoffSummary.codingDeferred },
+                          { label: "Removed", value: handoffSummary.removed },
+                        ].map((s) => (
+                          <div key={s.label} className="rounded border border-border bg-background p-2 text-center">
+                            <div className="text-xl font-semibold text-foreground">{s.value}</div>
+                            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {approvedIds.length === 0 ? (
+                        <div className="rounded border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                          No approved items available for SNOMED coding handoff.
+                        </div>
+                      ) : queueItems.length === 0 ? (
+                        <div className="rounded border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+                          Click "Send approved items to SNOMED coding queue" to prepare
+                          approved items for SNOMED lookup.
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Candidate</TableHead>
+                                <TableHead>Suggested SNOMED search</TableHead>
+                                <TableHead>Context</TableHead>
+                                <TableHead>Confidence</TableHead>
+                                <TableHead>Specificity</TableHead>
+                                <TableHead>Clinical</TableHead>
+                                <TableHead>Verification</TableHead>
+                                <TableHead>Reviewer notes</TableHead>
+                                <TableHead>Coding status</TableHead>
+                                <TableHead>Action</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {queueItems.map(({ queued, candidate: c }) => {
+                                const a = getApproval(c);
+                                return (
+                                  <TableRow key={c.id}>
+                                    <TableCell className="font-medium">{c.text}</TableCell>
+                                    <TableCell className="text-sm">{a.searchTerm}</TableCell>
+                                    <TableCell><ContextBadge value={c.context} /></TableCell>
+                                    <TableCell><ConfidenceBadge value={c.confidence} /></TableCell>
+                                    <TableCell><SpecificityBadge value={c.specificity} /></TableCell>
+                                    <TableCell className="text-sm">{a.clinical}</TableCell>
+                                    <TableCell className="text-sm">{a.verification}</TableCell>
+                                    <TableCell className="max-w-xs text-xs text-muted-foreground">
+                                      {a.notes || <span className="italic">—</span>}
+                                    </TableCell>
+                                    <TableCell>
+                                      <CodingStatusBadge value={queued.codingStatus} />
+                                    </TableCell>
+                                    <TableCell>
+                                      <div className="flex flex-wrap gap-1">
+                                        <Link
+                                          to="/terminology"
+                                          search={{ search: a.searchTerm }}
+                                          onClick={() => updateCodingStatus(c.id, "Search opened")}
+                                          className="inline-flex items-center gap-1 rounded border border-input bg-background px-2 py-1 text-xs hover:bg-accent"
+                                        >
+                                          <ExternalLink className="h-3 w-3" />
+                                          Open Terminology Search
+                                        </Link>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => updateCodingStatus(c.id, "Coding deferred")}
+                                        >
+                                          <Clock className="mr-1 h-3 w-3" />
+                                          Defer
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => updateCodingStatus(c.id, "Awaiting SNOMED search")}
+                                        >
+                                          <RotateCcw className="mr-1 h-3 w-3" />
+                                          Reset
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => removeFromCodingQueue(c.id)}
+                                        >
+                                          <Trash2 className="mr-1 h-3 w-3" />
+                                          Remove
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </>
             );
           })()}

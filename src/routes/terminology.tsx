@@ -1,10 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Search, ChevronLeft, AlertTriangle, CheckCircle2, XCircle, HelpCircle } from "lucide-react";
+import { Search, ChevronLeft, AlertTriangle, CheckCircle2, XCircle, HelpCircle, Info } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { LoadingState, ErrorState, EmptyState } from "@/components/clinical/StateViews";
 
+type TerminologySearch = { search?: string };
+
 export const Route = createFileRoute("/terminology")({
+  validateSearch: (raw: Record<string, unknown>): TerminologySearch => {
+    const s = raw.search;
+    return typeof s === "string" && s.length > 0 ? { search: s } : {};
+  },
   component: TerminologyPage,
 });
 
@@ -25,13 +31,17 @@ interface SearchError {
 }
 
 function TerminologyPage() {
-  const [term, setTerm] = useState("");
+  const { search: prefill } = Route.useSearch();
+  const [term, setTerm] = useState(prefill ?? "");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SnomedConcept[] | null>(null);
   const [error, setError] = useState<SearchError | null>(null);
   const [status, setStatus] = useState<Status>("unknown");
   const [lastPath, setLastPath] = useState<string>("");
   const [showDetails, setShowDetails] = useState(false);
+  const [handoffBannerDismissed, setHandoffBannerDismissed] = useState(false);
+  const showHandoffBanner = Boolean(prefill) && !handoffBannerDismissed;
+
 
   const doSearch = async () => {
     const q = term.trim();
@@ -121,6 +131,24 @@ function TerminologyPage() {
             </div>
             <StatusBadge status={status} />
           </div>
+
+          {showHandoffBanner && (
+            <div className="mb-3 flex items-start gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+              <div className="flex-1">
+                Search term received from NLP coding handoff. Click Search to query the
+                terminology server.
+              </div>
+              <button
+                onClick={() => setHandoffBannerDismissed(true)}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          )}
+
 
           <div className="flex gap-2">
             <input
