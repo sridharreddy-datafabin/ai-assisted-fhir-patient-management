@@ -37,13 +37,28 @@ interface ChartPoint {
 const VITAL_META: Record<string, { label: string; unit?: string }> = {
   [VITAL_CODES.heartRate]: { label: "Heart rate", unit: "bpm" },
   [VITAL_CODES.temperature]: { label: "Temperature", unit: "°C" },
+  [VITAL_CODES.temperatureOral]: { label: "Temperature", unit: "°C" },
+  [VITAL_CODES.temperatureBody]: { label: "Temperature", unit: "°C" },
   [VITAL_CODES.respiratoryRate]: { label: "Respiratory rate", unit: "/min" },
   [VITAL_CODES.oxygenSaturation]: { label: "Oxygen saturation", unit: "%" },
+  [VITAL_CODES.oxygenSaturationAlt]: { label: "Oxygen saturation", unit: "%" },
   [VITAL_CODES.height]: { label: "Height", unit: "cm" },
   [VITAL_CODES.weight]: { label: "Weight", unit: "kg" },
   [VITAL_CODES.bmi]: { label: "BMI", unit: "kg/m²" },
   [VITAL_CODES.bloodPressure]: { label: "Blood pressure", unit: "mmHg" },
+  [VITAL_CODES.bloodPressurePanel]: { label: "Blood pressure", unit: "mmHg" },
 };
+
+const BP_CODES = new Set<string>([VITAL_CODES.bloodPressure, VITAL_CODES.bloodPressurePanel]);
+const TEMP_CODES = new Set<string>([
+  VITAL_CODES.temperature,
+  VITAL_CODES.temperatureOral,
+  VITAL_CODES.temperatureBody,
+]);
+const SPO2_CODES = new Set<string>([
+  VITAL_CODES.oxygenSaturation,
+  VITAL_CODES.oxygenSaturationAlt,
+]);
 
 const SERIES_COLORS = [
   "#ef4444",
