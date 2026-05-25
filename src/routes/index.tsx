@@ -76,8 +76,9 @@ function PatientsPage() {
   );
 
   useEffect(() => {
-    load(debounced);
-  }, [debounced, load]);
+    if (authReady) load(debounced);
+  }, [authReady, debounced, load]);
+
 
   const openCreate = () => {
     setEditing(null);
