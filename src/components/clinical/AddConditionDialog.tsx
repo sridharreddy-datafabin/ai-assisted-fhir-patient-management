@@ -209,7 +209,7 @@ export function AddConditionDialog({
 
         <div className="space-y-5 px-6 py-5">
           <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100">
-            This workflow is preview-only. No Condition resource will be saved to the FHIR server in Phase 2 #5.
+            This workflow is preview-only. No Condition resource will be saved to the FHIR server in Phase 2 #6.
           </div>
 
           {/* 1. Patient context */}
@@ -411,7 +411,98 @@ export function AddConditionDialog({
             </div>
           </section>
 
-          {/* 4. FHIR Preview */}
+          {/* 4. Mapping preview */}
+          <section>
+            <h3 className="mb-2 text-sm font-semibold text-foreground">Mapping preview</h3>
+
+            {/* 4a. Source concept */}
+            <div className="mb-3 rounded-md border border-border bg-muted/30 p-3">
+              <h4 className="mb-2 text-xs font-semibold text-foreground">Source concept</h4>
+              {selected ? (
+                <dl className="grid grid-cols-[120px_1fr] gap-y-1 text-xs">
+                  <dt className="text-muted-foreground">Source system</dt>
+                  <dd className="break-all font-mono text-foreground">{SNOMED_SYSTEM}</dd>
+                  <dt className="text-muted-foreground">Source code</dt>
+                  <dd className="font-mono text-foreground">{selected.code}</dd>
+                  <dt className="text-muted-foreground">Source display</dt>
+                  <dd className="text-foreground">{selected.display}</dd>
+                </dl>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Select a SNOMED concept to preview future mappings.
+                </p>
+              )}
+            </div>
+
+            {/* 4b. Target mapping options */}
+            <div className="mb-3">
+              <h4 className="mb-2 text-xs font-semibold text-foreground">Target mapping options</h4>
+              <div className="flex flex-wrap gap-2">
+                {["ICD-10", "Local code", "Reporting category"].map((label) => (
+                  <label
+                    key={label}
+                    className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs opacity-50"
+                    title="Mapping targets are disabled in Phase 2 #6. Future mapping will use FHIR ConceptMap and the $translate operation."
+                  >
+                    <input type="checkbox" disabled className="h-3.5 w-3.5" />
+                    <span className="text-foreground">{label}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] italic text-muted-foreground">
+                Mapping targets are disabled in Phase 2 #6. Future mapping will use FHIR ConceptMap and the $translate operation.
+              </p>
+            </div>
+
+            {/* 4c. Future workflow explanation */}
+            <div className="mb-3 rounded-md border border-border bg-muted/30 p-3">
+              <h4 className="mb-2 text-xs font-semibold text-foreground">Future mapping workflow</h4>
+              <ol className="list-decimal space-y-1 pl-4 text-xs text-muted-foreground">
+                <li>Select a SNOMED CT source concept</li>
+                <li>Choose a target code system such as ICD-10</li>
+                <li>Call ConceptMap/$translate through the terminology proxy</li>
+                <li>Review mapped target code</li>
+                <li>Store or export mapped codes according to reporting requirements</li>
+              </ol>
+            </div>
+
+            {/* 4d. Preview-only mapping object */}
+            <div className="mb-3">
+              <h4 className="mb-2 text-xs font-semibold text-foreground">Future mapping request preview</h4>
+              {selected ? (
+                <pre className="max-h-48 overflow-auto rounded-md border border-border bg-muted p-3 text-[11px] text-foreground">
+                  {JSON.stringify(
+                    {
+                      operation: "$translate",
+                      sourceCodeSystem: SNOMED_SYSTEM,
+                      sourceCode: selected.code,
+                      sourceDisplay: selected.display,
+                      targetCodeSystem: "ICD-10",
+                      status: "not-executed",
+                      reason: "Mapping is disabled in Phase 2 #6",
+                    },
+                    null,
+                    2,
+                  )}
+                </pre>
+              ) : (
+                <p className="rounded-md border border-dashed border-border bg-muted/30 p-4 text-center text-xs text-muted-foreground">
+                  No mapping request preview available until a SNOMED concept is selected.
+                </p>
+              )}
+            </div>
+
+            {/* 4e. Explicit disabled state */}
+            <button
+              disabled
+              title="Mapping is not implemented in this phase."
+              className="cursor-not-allowed rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground opacity-50"
+            >
+              Preview mapping
+            </button>
+          </section>
+
+          {/* 5. FHIR Preview */}
           <section>
             <h3 className="mb-2 text-sm font-semibold text-foreground">FHIR Condition JSON preview</h3>
             {selected ? (
