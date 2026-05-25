@@ -44,9 +44,17 @@ const VERIFICATION_OPTIONS = [
 
 function todayIso(): string {
   const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${mm}-${dd}`;
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Accept only YYYY-MM-DD from the browser date input; do not parse through Date to avoid timezone drift. */
+function toIsoDate(value: string): string | null {
+  if (!value) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+  return null;
 }
 
 export function AddConditionDialog({
