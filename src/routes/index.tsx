@@ -1,7 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { LogOut, Plus, X } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { supabase } from "@/integrations/supabase/client";
 import {
   type FhirPatient,
   searchPatients,
@@ -17,6 +18,7 @@ import { LoadingState, ErrorState, EmptyState } from "@/components/clinical/Stat
 export const Route = createFileRoute("/")({
   component: PatientsPage,
 });
+
 
 function toResource(v: PatientFormValues, id?: string): FhirPatient {
   return {
