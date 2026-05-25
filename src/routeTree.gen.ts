@@ -9,11 +9,17 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TerminologyRouteImport } from './routes/terminology'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PatientIdRouteImport } from './routes/patient.$id'
 import { Route as ApiTerminologySplatRouteImport } from './routes/api/terminology/$'
 import { Route as ApiFhirSplatRouteImport } from './routes/api/fhir/$'
 
+const TerminologyRoute = TerminologyRouteImport.update({
+  id: '/terminology',
+  path: '/terminology',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const ApiFhirSplatRoute = ApiFhirSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/terminology': typeof TerminologyRoute
   '/patient/$id': typeof PatientIdRoute
   '/api/fhir/$': typeof ApiFhirSplatRoute
   '/api/terminology/$': typeof ApiTerminologySplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/terminology': typeof TerminologyRoute
   '/patient/$id': typeof PatientIdRoute
   '/api/fhir/$': typeof ApiFhirSplatRoute
   '/api/terminology/$': typeof ApiTerminologySplatRoute
@@ -50,20 +58,38 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/terminology': typeof TerminologyRoute
   '/patient/$id': typeof PatientIdRoute
   '/api/fhir/$': typeof ApiFhirSplatRoute
   '/api/terminology/$': typeof ApiTerminologySplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/patient/$id' | '/api/fhir/$' | '/api/terminology/$'
+  fullPaths:
+    | '/'
+    | '/terminology'
+    | '/patient/$id'
+    | '/api/fhir/$'
+    | '/api/terminology/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/patient/$id' | '/api/fhir/$' | '/api/terminology/$'
-  id: '__root__' | '/' | '/patient/$id' | '/api/fhir/$' | '/api/terminology/$'
+  to:
+    | '/'
+    | '/terminology'
+    | '/patient/$id'
+    | '/api/fhir/$'
+    | '/api/terminology/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/terminology'
+    | '/patient/$id'
+    | '/api/fhir/$'
+    | '/api/terminology/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  TerminologyRoute: typeof TerminologyRoute
   PatientIdRoute: typeof PatientIdRoute
   ApiFhirSplatRoute: typeof ApiFhirSplatRoute
   ApiTerminologySplatRoute: typeof ApiTerminologySplatRoute
@@ -71,6 +97,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terminology': {
+      id: '/terminology'
+      path: '/terminology'
+      fullPath: '/terminology'
+      preLoaderRoute: typeof TerminologyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +137,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  TerminologyRoute: TerminologyRoute,
   PatientIdRoute: PatientIdRoute,
   ApiFhirSplatRoute: ApiFhirSplatRoute,
   ApiTerminologySplatRoute: ApiTerminologySplatRoute,
