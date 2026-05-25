@@ -36,7 +36,7 @@ async function handle(res: Response) {
 }
 
 export async function searchPatients(name?: string): Promise<FhirPatient[]> {
-  const params = new URLSearchParams({ _count: "20" });
+  const params = new URLSearchParams({ _count: "20", _sort: "-_lastUpdated" });
   if (name && name.trim()) params.set("name", name.trim());
   const res = await fetch(`${BASE}/Patient?${params.toString()}`);
   const bundle = (await handle(res)) as FhirBundle<FhirPatient>;
