@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
+import logo from "@/assets/logo.png";
 import {
   type FhirPatient,
   searchPatients,
@@ -103,8 +104,8 @@ function PatientsPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-2.5">
+            <img src={logo} alt="Patient Management" className="h-7 w-7" />
             <h1 className="text-lg font-semibold text-foreground">Patient Management</h1>
           </div>
           <span className="text-xs text-muted-foreground">FHIR R4</span>
