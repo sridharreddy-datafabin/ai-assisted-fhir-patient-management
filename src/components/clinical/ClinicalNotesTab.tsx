@@ -705,6 +705,23 @@ function SpecificityBadge({ value }: { value: SpecificityStatus }) {
   );
 }
 
+function CodingStatusBadge({ value }: { value: SnomedCodingStatus }) {
+  const map: Record<SnomedCodingStatus, string> = {
+    "Awaiting SNOMED search": "bg-slate-100 text-slate-800 dark:bg-slate-800/50 dark:text-slate-200",
+    "Search opened": "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+    "Authentication required": "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    "Coding deferred": "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300",
+    "Manually removed": "bg-muted text-muted-foreground",
+  };
+  return (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${map[value]}`}>
+      {value}
+    </span>
+  );
+}
+
+
+
 type FilterKey =
   | "All"
   | "Present"
