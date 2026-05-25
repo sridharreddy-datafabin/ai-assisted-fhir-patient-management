@@ -514,6 +514,10 @@ export function ConditionsTab({ patientId, patient }: { patientId: string; patie
           </tbody>
         </table>
       </div>
+
+      {addOpen && patient && (
+        <AddConditionDialog patient={patient} onClose={() => setAddOpen(false)} />
+      )}
     </div>
   );
 }
