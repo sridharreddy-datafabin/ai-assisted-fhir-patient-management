@@ -114,7 +114,10 @@ function PatientsPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link to="/terminology" className="text-xs font-medium text-muted-foreground hover:text-foreground">
-              Terminology
+              Terminology Search
+            </Link>
+            <Link to="/terminology-configuration" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+              Configuration
             </Link>
             <span className="text-xs text-muted-foreground">FHIR R4</span>
           </div>

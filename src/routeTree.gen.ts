@@ -9,12 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TerminologyConfigurationRouteImport } from './routes/terminology-configuration'
 import { Route as TerminologyRouteImport } from './routes/terminology'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PatientIdRouteImport } from './routes/patient.$id'
 import { Route as ApiTerminologySplatRouteImport } from './routes/api/terminology/$'
 import { Route as ApiFhirSplatRouteImport } from './routes/api/fhir/$'
 
+const TerminologyConfigurationRoute =
+  TerminologyConfigurationRouteImport.update({
+    id: '/terminology-configuration',
+    path: '/terminology-configuration',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const TerminologyRoute = TerminologyRouteImport.update({
   id: '/terminology',
   path: '/terminology',
@@ -44,6 +51,7 @@ const ApiFhirSplatRoute = ApiFhirSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/terminology': typeof TerminologyRoute
+  '/terminology-configuration': typeof TerminologyConfigurationRoute
   '/patient/$id': typeof PatientIdRoute
   '/api/fhir/$': typeof ApiFhirSplatRoute
   '/api/terminology/$': typeof ApiTerminologySplatRoute
@@ -51,6 +59,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/terminology': typeof TerminologyRoute
+  '/terminology-configuration': typeof TerminologyConfigurationRoute
   '/patient/$id': typeof PatientIdRoute
   '/api/fhir/$': typeof ApiFhirSplatRoute
   '/api/terminology/$': typeof ApiTerminologySplatRoute
@@ -59,6 +68,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/terminology': typeof TerminologyRoute
+  '/terminology-configuration': typeof TerminologyConfigurationRoute
   '/patient/$id': typeof PatientIdRoute
   '/api/fhir/$': typeof ApiFhirSplatRoute
   '/api/terminology/$': typeof ApiTerminologySplatRoute
@@ -68,6 +78,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/terminology'
+    | '/terminology-configuration'
     | '/patient/$id'
     | '/api/fhir/$'
     | '/api/terminology/$'
@@ -75,6 +86,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/terminology'
+    | '/terminology-configuration'
     | '/patient/$id'
     | '/api/fhir/$'
     | '/api/terminology/$'
@@ -82,6 +94,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/terminology'
+    | '/terminology-configuration'
     | '/patient/$id'
     | '/api/fhir/$'
     | '/api/terminology/$'
@@ -90,6 +103,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TerminologyRoute: typeof TerminologyRoute
+  TerminologyConfigurationRoute: typeof TerminologyConfigurationRoute
   PatientIdRoute: typeof PatientIdRoute
   ApiFhirSplatRoute: typeof ApiFhirSplatRoute
   ApiTerminologySplatRoute: typeof ApiTerminologySplatRoute
@@ -97,6 +111,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terminology-configuration': {
+      id: '/terminology-configuration'
+      path: '/terminology-configuration'
+      fullPath: '/terminology-configuration'
+      preLoaderRoute: typeof TerminologyConfigurationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terminology': {
       id: '/terminology'
       path: '/terminology'
@@ -138,6 +159,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TerminologyRoute: TerminologyRoute,
+  TerminologyConfigurationRoute: TerminologyConfigurationRoute,
   PatientIdRoute: PatientIdRoute,
   ApiFhirSplatRoute: ApiFhirSplatRoute,
   ApiTerminologySplatRoute: ApiTerminologySplatRoute,
@@ -145,3 +167,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
