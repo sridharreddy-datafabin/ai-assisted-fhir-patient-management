@@ -106,21 +106,41 @@ function PatientsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <img src={logo} alt="Patient Management" className="h-7 w-7" />
-            <h1 className="text-lg font-semibold text-foreground">Patient Management</h1>
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/70 shadow-sm ring-1 ring-primary/20">
+              <img src={logo} alt="" className="h-5 w-5 brightness-0 invert" />
+            </div>
+            <div className="flex flex-col leading-tight">
+              <h1 className="text-sm font-semibold tracking-tight text-foreground">
+                Patient Management
+              </h1>
+              <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                Clinical Workspace
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <Link to="/terminology" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+          <nav className="flex items-center gap-1">
+            <Link
+              to="/terminology"
+              className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              activeProps={{ className: "rounded-md px-3 py-1.5 text-xs font-medium bg-accent text-accent-foreground" }}
+            >
               Terminology Search
             </Link>
-            <Link to="/terminology-configuration" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+            <Link
+              to="/terminology-configuration"
+              className="rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              activeProps={{ className: "rounded-md px-3 py-1.5 text-xs font-medium bg-accent text-accent-foreground" }}
+            >
               Configuration
             </Link>
-            <span className="text-xs text-muted-foreground">FHIR R4</span>
-          </div>
+            <span className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              FHIR R4
+            </span>
+          </nav>
         </div>
       </header>
 
