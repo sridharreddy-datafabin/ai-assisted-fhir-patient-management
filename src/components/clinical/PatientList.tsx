@@ -1,6 +1,6 @@
 import { Pencil } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { type FhirPatient, formatPatientName } from "@/lib/fhir";
+import { type FhirPatient, formatPatientName, calculateAge } from "@/lib/fhir";
 
 function GenderBadge({ gender }: { gender?: string }) {
   const g = (gender ?? "").toLowerCase();
