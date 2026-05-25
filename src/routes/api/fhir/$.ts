@@ -6,9 +6,10 @@ async function proxy({ request, params }: { request: Request; params: { _splat?:
   const baseUrl = process.env.FHIR_BASE_URL;
   const token = process.env.FHIR_BEARER_TOKEN;
   if (!baseUrl || !token) {
+    console.error("FHIR proxy misconfigured: FHIR_BASE_URL or FHIR_BEARER_TOKEN not set");
     return new Response(
-      JSON.stringify({ error: "FHIR_BASE_URL or FHIR_BEARER_TOKEN not configured" }),
-      { status: 500, headers: { "Content-Type": "application/json" } },
+      JSON.stringify({ error: "Service unavailable" }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
     );
   }
 
