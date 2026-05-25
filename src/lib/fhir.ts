@@ -63,6 +63,12 @@ export interface FhirCondition {
   recordedDate?: string;
 }
 
+export interface FhirMedication {
+  resourceType: "Medication";
+  id?: string;
+  code?: FhirCodeableConcept;
+}
+
 export interface FhirMedicationRequest {
   resourceType: "MedicationRequest";
   id?: string;
@@ -71,6 +77,10 @@ export interface FhirMedicationRequest {
   authoredOn?: string;
   medicationCodeableConcept?: FhirCodeableConcept;
   medicationReference?: FhirReference;
+}
+
+export interface ResolvedMedicationRequest extends FhirMedicationRequest {
+  _resolvedMedication?: FhirMedication;
 }
 
 export interface FhirBundle<T> {
