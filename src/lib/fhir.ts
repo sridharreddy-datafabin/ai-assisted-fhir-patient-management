@@ -132,12 +132,16 @@ export async function updatePatient(id: string, p: FhirPatient): Promise<FhirPat
 export const VITAL_CODES = {
   heartRate: "8867-4",
   temperature: "8310-5",
+  temperatureOral: "8331-1",
+  temperatureBody: "8331-0",
   respiratoryRate: "9279-1",
   oxygenSaturation: "59408-5",
+  oxygenSaturationAlt: "2708-6",
   height: "8302-2",
   weight: "29463-7",
   bmi: "39156-5",
   bloodPressure: "55284-4",
+  bloodPressurePanel: "85354-9",
 } as const;
 
 export async function getVitals(patientId: string): Promise<FhirObservation[]> {

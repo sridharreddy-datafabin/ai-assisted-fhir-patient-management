@@ -37,13 +37,28 @@ interface ChartPoint {
 const VITAL_META: Record<string, { label: string; unit?: string }> = {
   [VITAL_CODES.heartRate]: { label: "Heart rate", unit: "bpm" },
   [VITAL_CODES.temperature]: { label: "Temperature", unit: "°C" },
+  [VITAL_CODES.temperatureOral]: { label: "Temperature", unit: "°C" },
+  [VITAL_CODES.temperatureBody]: { label: "Temperature", unit: "°C" },
   [VITAL_CODES.respiratoryRate]: { label: "Respiratory rate", unit: "/min" },
   [VITAL_CODES.oxygenSaturation]: { label: "Oxygen saturation", unit: "%" },
+  [VITAL_CODES.oxygenSaturationAlt]: { label: "Oxygen saturation", unit: "%" },
   [VITAL_CODES.height]: { label: "Height", unit: "cm" },
   [VITAL_CODES.weight]: { label: "Weight", unit: "kg" },
   [VITAL_CODES.bmi]: { label: "BMI", unit: "kg/m²" },
   [VITAL_CODES.bloodPressure]: { label: "Blood pressure", unit: "mmHg" },
+  [VITAL_CODES.bloodPressurePanel]: { label: "Blood pressure", unit: "mmHg" },
 };
+
+const BP_CODES = new Set<string>([VITAL_CODES.bloodPressure, VITAL_CODES.bloodPressurePanel]);
+const TEMP_CODES = new Set<string>([
+  VITAL_CODES.temperature,
+  VITAL_CODES.temperatureOral,
+  VITAL_CODES.temperatureBody,
+]);
+const SPO2_CODES = new Set<string>([
+  VITAL_CODES.oxygenSaturation,
+  VITAL_CODES.oxygenSaturationAlt,
+]);
 
 const SERIES_COLORS = [
   "#ef4444",
@@ -65,7 +80,7 @@ function extractRows(obs: FhirObservation[]): VitalRow[] {
     const meta = VITAL_META[code];
     if (!meta) continue;
 
-    if (code === VITAL_CODES.bloodPressure && o.component?.length) {
+    if (BP_CODES.has(code) && o.component?.length) {
       const sys = o.component.find((c) => c.code?.coding?.some((cc) => cc.code === "8480-6"));
       const dia = o.component.find((c) => c.code?.coding?.some((cc) => cc.code === "8462-4"));
       const sysV = sys?.valueQuantity?.value;
@@ -242,11 +257,20 @@ export function VitalsTab({ patientId }: { patientId: string }) {
   const groups = useMemo(() => {
     const map = new Map<string, { label: string; rows: VitalRow[] }>();
     for (const r of rows) {
-      // Combine systolic + diastolic into a single "Blood pressure" card.
-      const key =
-        r.code === "8480-6" || r.code === "8462-4" ? "blood-pressure" : r.code;
-      const groupLabel =
-        key === "blood-pressure" ? "Blood pressure" : r.label;
+      // Combine systolic + diastolic into a single "Blood pressure" card,
+      // and normalize alternate temperature / SpO2 LOINC codes into one group.
+      let key = r.code;
+      let groupLabel = r.label;
+      if (r.code === "8480-6" || r.code === "8462-4" || BP_CODES.has(r.code)) {
+        key = "blood-pressure";
+        groupLabel = "Blood pressure";
+      } else if (TEMP_CODES.has(r.code)) {
+        key = "temperature";
+        groupLabel = "Temperature";
+      } else if (SPO2_CODES.has(r.code)) {
+        key = "oxygen-saturation";
+        groupLabel = "Oxygen saturation";
+      }
       const g = map.get(key) ?? { label: groupLabel, rows: [] };
       g.rows.push(r);
       map.set(key, g);
