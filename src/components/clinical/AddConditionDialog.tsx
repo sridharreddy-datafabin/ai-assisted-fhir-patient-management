@@ -514,6 +514,9 @@ export function AddConditionDialog({
                 Select a SNOMED concept above to preview the FHIR Condition resource.
               </p>
             )}
+            <p className="mt-2 text-[11px] italic text-muted-foreground">
+              FHIR JSON dates are rendered in ISO format: YYYY-MM-DD
+            </p>
           </section>
         </div>
 
