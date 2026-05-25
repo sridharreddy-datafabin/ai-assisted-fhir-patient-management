@@ -1,5 +1,3 @@
-import { supabase } from "@/integrations/supabase/client";
-
 export type Gender = "male" | "female" | "other" | "unknown";
 
 export interface FhirHumanName {
@@ -24,15 +22,6 @@ export interface FhirBundle<T> {
 
 const BASE = "/api/fhir";
 
-async function authHeaders(extra: Record<string, string> = {}): Promise<Record<string, string>> {
-  const { data } = await supabase.auth.getSession();
-  const token = data.session?.access_token;
-  return {
-    ...extra,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-}
-
 async function handle(res: Response) {
   const text = await res.text();
   const json = text ? JSON.parse(text) : null;
@@ -49,24 +38,20 @@ async function handle(res: Response) {
 export async function searchPatients(name?: string): Promise<FhirPatient[]> {
   const params = new URLSearchParams({ _count: "20" });
   if (name && name.trim()) params.set("name", name.trim());
-  const res = await fetch(`${BASE}/Patient?${params.toString()}`, {
-    headers: await authHeaders(),
-  });
+  const res = await fetch(`${BASE}/Patient?${params.toString()}`);
   const bundle = (await handle(res)) as FhirBundle<FhirPatient>;
   return (bundle.entry ?? []).map((e) => e.resource);
 }
 
 export async function getPatient(id: string): Promise<FhirPatient> {
-  const res = await fetch(`${BASE}/Patient/${encodeURIComponent(id)}`, {
-    headers: await authHeaders(),
-  });
+  const res = await fetch(`${BASE}/Patient/${encodeURIComponent(id)}`);
   return handle(res);
 }
 
 export async function createPatient(p: FhirPatient): Promise<FhirPatient> {
   const res = await fetch(`${BASE}/Patient`, {
     method: "POST",
-    headers: await authHeaders({ "Content-Type": "application/fhir+json" }),
+    headers: { "Content-Type": "application/fhir+json" },
     body: JSON.stringify(p),
   });
   return handle(res);
@@ -75,7 +60,7 @@ export async function createPatient(p: FhirPatient): Promise<FhirPatient> {
 export async function updatePatient(id: string, p: FhirPatient): Promise<FhirPatient> {
   const res = await fetch(`${BASE}/Patient/${encodeURIComponent(id)}`, {
     method: "PUT",
-    headers: await authHeaders({ "Content-Type": "application/fhir+json" }),
+    headers: { "Content-Type": "application/fhir+json" },
     body: JSON.stringify({ ...p, id }),
   });
   return handle(res);

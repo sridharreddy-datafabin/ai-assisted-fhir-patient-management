@@ -1,32 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
 
 const ALLOWED_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH"];
 const ALLOWED_RESOURCES = new Set(["Patient"]);
-
-function unauthorized() {
-  return new Response(JSON.stringify({ error: "Unauthorized" }), {
-    status: 401,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-async function verifyUser(request: Request): Promise<boolean> {
-  const auth = request.headers.get("authorization");
-  if (!auth?.startsWith("Bearer ")) return false;
-  const token = auth.slice(7);
-  if (!token) return false;
-
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) return false;
-
-  const supabase = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { data, error } = await supabase.auth.getClaims(token);
-  return !error && !!data?.claims?.sub;
-}
 
 async function proxy({ request, params }: { request: Request; params: { _splat?: string } }) {
   const baseUrl = process.env.FHIR_BASE_URL;
@@ -38,8 +13,6 @@ async function proxy({ request, params }: { request: Request; params: { _splat?:
       headers: { "Content-Type": "application/json" },
     });
   }
-
-  if (!(await verifyUser(request))) return unauthorized();
 
   const path = params._splat ?? "";
   const resource = path.split("/")[0] ?? "";
