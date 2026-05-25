@@ -99,9 +99,14 @@ function TerminologyPage() {
             <img src={logo} alt="Patient Management" className="h-7 w-7" />
             <h1 className="text-lg font-semibold text-foreground">Patient Management</h1>
           </div>
-          <Link to="/" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
-            <ChevronLeft className="h-3 w-3" /> Back to patients
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/terminology-configuration" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+              Configuration
+            </Link>
+            <Link to="/" className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1">
+              <ChevronLeft className="h-3 w-3" /> Back to patients
+            </Link>
+          </div>
         </div>
       </header>
 
