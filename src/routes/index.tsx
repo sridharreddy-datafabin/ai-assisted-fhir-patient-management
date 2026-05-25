@@ -13,6 +13,7 @@ import { PatientList } from "@/components/clinical/PatientList";
 import { PatientForm, type PatientFormValues } from "@/components/clinical/PatientForm";
 import { SearchBar } from "@/components/clinical/SearchBar";
 import { LoadingState, ErrorState, EmptyState } from "@/components/clinical/StateViews";
+import { TerminologyDiagnostics } from "@/components/clinical/TerminologyDiagnostics";
 
 export const Route = createFileRoute("/")({
   component: PatientsPage,
@@ -141,6 +142,8 @@ function PatientsPage() {
         ) : (
           <PatientList patients={patients} onEdit={openEdit} />
         )}
+
+        <TerminologyDiagnostics />
       </main>
 
       {formOpen && (
