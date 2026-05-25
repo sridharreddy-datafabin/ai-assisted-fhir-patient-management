@@ -331,14 +331,25 @@ export function ConditionsTab({ patientId, patient }: { patientId: string; patie
             <span><b className="text-foreground">{summary.missingCode}</b> missing code</span>
             <span className="text-rose-700 dark:text-rose-300"><b>{summary.error}</b> error</span>
           </div>
-          <button
-            onClick={runAll}
-            disabled={bulkRunning || visibleValidatableCount === 0}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-          >
-            {bulkRunning && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-            Validate all visible conditions ({visibleValidatableCount})
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={runAll}
+              disabled={bulkRunning || visibleValidatableCount === 0}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              {bulkRunning && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              Validate all visible conditions ({visibleValidatableCount})
+            </button>
+            {patient && (
+              <button
+                onClick={() => setAddOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add coded condition
+              </button>
+            )}
+          </div>
         </div>
         <p className="mt-2 text-[11px] italic text-muted-foreground">
           Validation results are session-only and are not saved to the FHIR server.
