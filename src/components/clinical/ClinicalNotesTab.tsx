@@ -1203,12 +1203,9 @@ export function ClinicalNotesTab({ patient }: Props) {
     publishWorkflowSnapshot(pid, snapshot);
   }, [patient.id, snapshot]);
 
-  useEffect(() => {
-    const pid = patient.id;
-    return () => {
-      if (pid) clearWorkflowSnapshot(pid);
-    };
-  }, [patient.id]);
+  // Intentionally do NOT clear the snapshot on unmount: the Clinical Notes
+  // tab unmounts when the user switches tabs, but the Workflow Summary tab
+  // needs to keep reading the session-only snapshot for this patient.
 
   return (
     <div className="space-y-6">
