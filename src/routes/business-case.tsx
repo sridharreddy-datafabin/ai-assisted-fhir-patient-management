@@ -189,31 +189,37 @@ function BusinessCasePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <ValueCard
               icon={<Layers className="h-5 w-5" />}
+              iconClassName="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
               title="Standardised structured healthcare data"
               description="Converts clinical information into FHIR-ready structured resources."
             />
             <ValueCard
               icon={<ScanText className="h-5 w-5" />}
+              iconClassName="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
               title="Intelligent workflow support"
               description="Helps users identify candidate conditions from free-text notes."
             />
             <ValueCard
               icon={<Clock className="h-5 w-5" />}
+              iconClassName="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
               title="Reduced clinician and admin effort"
               description="Supports review, coding, and sign-off instead of manual re-entry."
             />
             <ValueCard
               icon={<Globe className="h-5 w-5" />}
+              iconClassName="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
               title="Better interoperability"
               description="Uses FHIR R4 and terminology-ready workflows."
             />
             <ValueCard
               icon={<ShieldCheck className="h-5 w-5" />}
+              iconClassName="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
               title="Safer clinical automation"
               description="No NLP result is saved automatically. Clinician approval is required."
             />
             <ValueCard
               icon={<Search className="h-5 w-5" />}
+              iconClassName="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
               title="Terminology-ready design"
               description="Uses a secure OntoServer/NHS Terminology Server proxy pattern."
             />
