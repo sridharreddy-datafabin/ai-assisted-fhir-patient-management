@@ -101,22 +101,26 @@ function BusinessCasePage() {
           <h2 className="mb-6 text-2xl font-bold text-foreground">Who this app is for</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <ForCard
-              icon={<Stethoscope className="h-5 w-5 text-primary" />}
+              icon={<Stethoscope className="h-5 w-5" />}
+              iconClassName="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
               title="Clinicians"
               description="Need faster review of patient problems without unsafe automation."
             />
             <ForCard
-              icon={<Users className="h-5 w-5 text-primary" />}
+              icon={<Users className="h-5 w-5" />}
+              iconClassName="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
               title="Care coordinators and admin teams"
               description="Need cleaner structured records and less manual data cleanup."
             />
             <ForCard
-              icon={<Cpu className="h-5 w-5 text-primary" />}
+              icon={<Cpu className="h-5 w-5" />}
+              iconClassName="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
               title="Health-tech builders"
               description="Need a practical pattern for FHIR, SNOMED, terminology validation, and AI-assisted workflows."
             />
             <ForCard
-              icon={<Globe className="h-5 w-5 text-primary" />}
+              icon={<Globe className="h-5 w-5" />}
+              iconClassName="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
               title="Interoperability teams"
               description="Need reliable FHIR-native data that can support analytics, reporting, and downstream system exchange."
             />
