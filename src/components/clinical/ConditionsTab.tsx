@@ -118,7 +118,7 @@ async function validateCode(code: string): Promise<ValidationResult> {
         ...base,
         status: "auth-required",
         message:
-          "Terminology service requires authentication. Configure OntoServer/NHS bearer token to validate SNOMED codes.",
+          "NHS terminology authentication is pending. Existing condition validation is configured but cannot complete until credentials are available.",
       };
     }
     if (res.status === 403) {
@@ -179,7 +179,7 @@ function ServiceBanner({ status }: { status: ServiceStatus }) {
     },
     "auth-required": {
       title: "Terminology service: Authentication required",
-      msg: "SNOMED validation is configured, but the NHS OntoServer requires authentication. Configure an OntoServer/NHS bearer token to complete live validation.",
+      msg: "NHS terminology authentication is pending. Existing condition validation is configured but cannot complete until system-to-system credentials are available. Requests are routed through /api/terminology so credentials are not exposed in the browser. Validation results remain session-only.",
       cls: "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-100",
       Icon: ShieldAlert,
     },

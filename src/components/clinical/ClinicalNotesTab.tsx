@@ -2138,12 +2138,14 @@ export function ClinicalNotesTab({ patient }: Props) {
                       </div>
 
                       {/* Auth banner */}
-                      <div className="flex items-start gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                      <div className="flex items-start gap-2 rounded-md border border-amber-300/50 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span>
-                          Terminology credentials are not configured yet. You can prepare
-                          and open search terms, but live SNOMED results may return
-                          authentication required.
+                          Approved NLP-derived candidates can be prepared for SNOMED coding,
+                          but live terminology lookup requires credentials. No automatic coding
+                          occurs. NHS Terminology Server credentials are pending; live SNOMED
+                          search, validation, and mapping will activate once system-to-system
+                          credentials are configured.
                         </span>
                       </div>
 

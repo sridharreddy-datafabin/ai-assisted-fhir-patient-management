@@ -290,7 +290,7 @@ function BusinessCasePage() {
             Current prototype limitation
           </h2>
           <p className="text-sm text-foreground">
-            NHS Terminology Server system-to-system credentials have been requested but are not yet available. Until credentials are configured, live SNOMED search and validation return authentication-required responses.
+            Credentials are pending. NHS Terminology Server system-to-system credentials have been requested but are not yet available. The app uses a secure backend terminology proxy and correctly handles authentication-required responses. Live SNOMED search, validation, and mapping will activate once credentials are configured. This is handled safely: no browser secrets, no fake SNOMED results, no FHIR save without coding, validation, and sign-off.
           </p>
           <p className="mt-3 text-sm font-medium text-foreground">This is handled intentionally and safely:</p>
           <ul className="mt-2 space-y-1">
