@@ -102,7 +102,7 @@ export function AddConditionDialog({
           status: "auth-required",
           results: [],
           message:
-            "Terminology service requires authentication. Configure an OntoServer/NHS bearer token before live SNOMED search can return results.",
+            "SNOMED concept search is ready but waiting for NHS Terminology Server credentials. No SNOMED code is assigned automatically. Requests are routed through /api/terminology so credentials are not exposed in the browser.",
         });
         return;
       }
