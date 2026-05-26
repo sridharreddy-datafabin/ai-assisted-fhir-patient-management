@@ -89,13 +89,21 @@ function PatientDetailPage() {
             <img src={logo} alt="Patient Management" className="h-7 w-7" />
             <h1 className="text-lg font-semibold text-foreground">Patient Management</h1>
           </div>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to patients
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/business-case"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              Business Case
+            </Link>
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to patients
+            </Link>
+          </div>
         </div>
       </header>
 
