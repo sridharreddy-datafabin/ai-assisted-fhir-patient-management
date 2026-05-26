@@ -197,7 +197,7 @@ function TerminologyConfigurationPage() {
             <ConfigRow label="Result count" value="20" />
             <ConfigRow
               label="Current status"
-              value="Blocked until bearer token is configured"
+              value="Ready, authentication pending"
             />
           </div>
           <div className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
