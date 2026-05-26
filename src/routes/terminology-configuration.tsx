@@ -224,7 +224,7 @@ function TerminologyConfigurationPage() {
             />
             <ConfigRow
               label="Current status"
-              value="Configured, authentication required"
+              value="Ready, authentication pending"
             />
           </div>
           <div className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
