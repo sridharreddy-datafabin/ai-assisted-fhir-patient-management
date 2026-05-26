@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import logo from "@/assets/logo.png";
@@ -16,6 +17,8 @@ import { MedicationsTab } from "@/components/clinical/MedicationsTab";
 import { OverviewTab } from "@/components/clinical/OverviewTab";
 import { ClinicalNotesTab } from "@/components/clinical/ClinicalNotesTab";
 import { WorkflowSummaryTab } from "@/components/clinical/WorkflowSummaryTab";
+import { EncountersTab } from "@/components/clinical/EncountersTab";
+import { AnalyticsTab } from "@/components/clinical/AnalyticsTab";
 
 
 export const Route = createFileRoute("/patient/$id")({
