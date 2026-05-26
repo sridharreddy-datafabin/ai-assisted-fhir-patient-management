@@ -107,6 +107,12 @@ function TerminologyConfigurationPage() {
           </div>
           <div className="flex items-center gap-4">
             <Link
+              to="/business-case"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              Business Case
+            </Link>
+            <Link
               to="/terminology"
               className="text-xs font-medium text-muted-foreground hover:text-foreground"
             >
