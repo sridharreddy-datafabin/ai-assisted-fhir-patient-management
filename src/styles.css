@@ -138,8 +138,28 @@
     border-color: var(--color-border);
   }
 
+  html {
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  }
+
+  /* Refined headings */
+  h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
+  }
+
+  /* Smoother focus rings using the teal accent */
+  :focus-visible {
+    outline: none;
   }
 }
+
