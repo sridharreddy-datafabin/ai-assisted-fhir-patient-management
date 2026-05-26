@@ -176,7 +176,7 @@ function PatientDetailPage() {
               <TabsContent value="encounters">
                 <EncountersTab patientId={id} onOpenWorkflow={() => setActiveTab("workflow")} />
               </TabsContent>
-              <TabsContent value="notes">
+              <TabsContent value="notes" forceMount className="data-[state=inactive]:hidden">
                 <ClinicalNotesTab patient={data} />
               </TabsContent>
               <TabsContent value="workflow">
