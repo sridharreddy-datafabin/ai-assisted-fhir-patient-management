@@ -243,7 +243,7 @@ function TerminologyConfigurationPage() {
             <ConfigRow label="Target system 3" value="Reporting category" />
             <ConfigRow
               label="Current status"
-              value="Disabled until credentials and ConceptMap details are confirmed"
+              value="Planned, authentication pending"
             />
           </div>
           <div className="mt-3 rounded-md border border-border bg-muted/30 p-3 text-xs text-muted-foreground">
