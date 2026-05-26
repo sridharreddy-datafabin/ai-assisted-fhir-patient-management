@@ -154,7 +154,7 @@ function TerminologyConfigurationPage() {
             />
             <StatusCard
               label="Authentication status"
-              value="Awaiting system-to-system credentials"
+              value="Credentials pending"
               variant="warning"
             />
             <StatusCard
@@ -179,7 +179,7 @@ function TerminologyConfigurationPage() {
               <div>
                 <div className="font-semibold">Authentication required</div>
                 <div className="text-xs opacity-90">
-                  The terminology proxy is configured, but live SNOMED search and validation require an NHS system-to-system bearer token. The token must be stored server-side only.
+                  NHS Terminology Server credentials are pending. The app is already wired for secure terminology access. Once system-to-system credentials are configured server-side, live SNOMED search and validation can be enabled without changing the frontend workflow.
                 </div>
               </div>
             </div>
