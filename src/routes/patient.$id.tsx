@@ -2,11 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import logo from "@/assets/logo.png";
+import { BrandMark } from "@/components/clinical/BrandMark";
 import {
   getPatient,
   formatPatientName,
   calculateAge,
+  patientIdentifier,
   type FhirPatient,
 } from "@/lib/fhir";
 import { LoadingState, ErrorState } from "@/components/clinical/StateViews";
