@@ -134,7 +134,7 @@ export function WorkflowSummaryTab({ patient }: Props) {
       title: "Terminology authentication",
       status: "pending",
       message:
-        "NHS system-to-system credentials requested. Live SNOMED search and validation are pending.",
+        "Terminology authentication pending. Live SNOMED search, validation, and mapping are blocked until NHS Terminology Server system-to-system credentials are configured.",
     },
     {
       key: "nlp",
