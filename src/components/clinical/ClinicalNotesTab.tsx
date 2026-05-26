@@ -1212,27 +1212,6 @@ export function ClinicalNotesTab({ patient }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Patient context */}
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-4">
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Name</div>
-            <div className="font-medium text-foreground">{formatPatientName(patient)}</div>
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Patient ID</div>
-            <div className="break-all font-mono text-xs text-foreground">{patient.id ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Gender</div>
-            <div className="font-medium capitalize text-foreground">{patient.gender ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Date of birth</div>
-            <div className="font-medium text-foreground">{patient.birthDate ?? "—"}</div>
-          </div>
-        </div>
-      </div>
 
       {/* Preview-only banner */}
       <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
