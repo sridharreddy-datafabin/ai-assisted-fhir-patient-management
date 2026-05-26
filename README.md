@@ -10,7 +10,7 @@ https://datafabin-patient-core.lovable.app
 
 ## Demo Video
 
-Add your YouTube demo link here.
+https://youtu.be/CzC0hmhlidg
 
 ## Problem
 
