@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TerminologyConfigurationRouteImport } from './routes/terminology-configuration'
 import { Route as TerminologyRouteImport } from './routes/terminology'
+import { Route as BusinessCaseRouteImport } from './routes/business-case'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PatientIdRouteImport } from './routes/patient.$id'
 import { Route as ApiTerminologySplatRouteImport } from './routes/api/terminology/$'
@@ -25,6 +26,11 @@ const TerminologyConfigurationRoute =
 const TerminologyRoute = TerminologyRouteImport.update({
   id: '/terminology',
   path: '/terminology',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BusinessCaseRoute = BusinessCaseRouteImport.update({
+  id: '/business-case',
+  path: '/business-case',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -50,6 +56,7 @@ const ApiFhirSplatRoute = ApiFhirSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/business-case': typeof BusinessCaseRoute
   '/terminology': typeof TerminologyRoute
   '/terminology-configuration': typeof TerminologyConfigurationRoute
   '/patient/$id': typeof PatientIdRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/business-case': typeof BusinessCaseRoute
   '/terminology': typeof TerminologyRoute
   '/terminology-configuration': typeof TerminologyConfigurationRoute
   '/patient/$id': typeof PatientIdRoute
@@ -67,6 +75,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/business-case': typeof BusinessCaseRoute
   '/terminology': typeof TerminologyRoute
   '/terminology-configuration': typeof TerminologyConfigurationRoute
   '/patient/$id': typeof PatientIdRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/business-case'
     | '/terminology'
     | '/terminology-configuration'
     | '/patient/$id'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/business-case'
     | '/terminology'
     | '/terminology-configuration'
     | '/patient/$id'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/business-case'
     | '/terminology'
     | '/terminology-configuration'
     | '/patient/$id'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BusinessCaseRoute: typeof BusinessCaseRoute
   TerminologyRoute: typeof TerminologyRoute
   TerminologyConfigurationRoute: typeof TerminologyConfigurationRoute
   PatientIdRoute: typeof PatientIdRoute
@@ -123,6 +136,13 @@ declare module '@tanstack/react-router' {
       path: '/terminology'
       fullPath: '/terminology'
       preLoaderRoute: typeof TerminologyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/business-case': {
+      id: '/business-case'
+      path: '/business-case'
+      fullPath: '/business-case'
+      preLoaderRoute: typeof BusinessCaseRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BusinessCaseRoute: BusinessCaseRoute,
   TerminologyRoute: TerminologyRoute,
   TerminologyConfigurationRoute: TerminologyConfigurationRoute,
   PatientIdRoute: PatientIdRoute,
