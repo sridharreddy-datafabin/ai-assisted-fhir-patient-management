@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Plus, X } from "lucide-react";
-import logo from "@/assets/logo.png";
+import { BrandMark } from "@/components/clinical/BrandMark";
 import {
   type FhirPatient,
   searchPatients,
