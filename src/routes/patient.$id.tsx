@@ -79,6 +79,7 @@ function Demographics({ patient }: { patient: FhirPatient }) {
 
 function PatientDetailPage() {
   const { id } = Route.useParams();
+  const [activeTab, setActiveTab] = useState("overview");
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["patient", id],
     queryFn: () => getPatient(id),
@@ -122,7 +123,7 @@ function PatientDetailPage() {
           <>
             <Demographics patient={data} />
 
-            <Tabs defaultValue="overview" className="w-full">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="h-auto flex-wrap justify-start">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="vitals">Vitals</TabsTrigger>
@@ -148,9 +149,7 @@ function PatientDetailPage() {
                 <MedicationsTab patientId={id} />
               </TabsContent>
               <TabsContent value="encounters">
-                <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-                  Encounters coming soon.
-                </div>
+                <EncountersTab patientId={id} onOpenWorkflow={() => setActiveTab("workflow")} />
               </TabsContent>
               <TabsContent value="notes">
                 <ClinicalNotesTab patient={data} />
@@ -159,9 +158,7 @@ function PatientDetailPage() {
                 <WorkflowSummaryTab patient={data} />
               </TabsContent>
               <TabsContent value="analytics">
-                <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-                  Analytics coming soon.
-                </div>
+                <AnalyticsTab patientId={id} onOpenWorkflow={() => setActiveTab("workflow")} />
               </TabsContent>
             </Tabs>
           </>
