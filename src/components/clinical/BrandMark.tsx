@@ -26,7 +26,7 @@ export function BrandMark({ subtitle = "Clinical Workspace" }: { subtitle?: stri
         <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-[oklch(0.78_0.15_195)] ring-2 ring-card" />
       </div>
       <div className="flex flex-col leading-tight">
-        <h1 className="text-[15px] font-bold tracking-tight text-primary">
+        <h1 className="text-base font-bold tracking-tight text-primary">
           Patient Management
         </h1>
         {subtitle && (

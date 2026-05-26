@@ -101,22 +101,26 @@ function BusinessCasePage() {
           <h2 className="mb-6 text-2xl font-bold text-foreground">Who this app is for</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <ForCard
-              icon={<Stethoscope className="h-5 w-5 text-primary" />}
+              icon={<Stethoscope className="h-5 w-5" />}
+              iconClassName="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
               title="Clinicians"
               description="Need faster review of patient problems without unsafe automation."
             />
             <ForCard
-              icon={<Users className="h-5 w-5 text-primary" />}
+              icon={<Users className="h-5 w-5" />}
+              iconClassName="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
               title="Care coordinators and admin teams"
               description="Need cleaner structured records and less manual data cleanup."
             />
             <ForCard
-              icon={<Cpu className="h-5 w-5 text-primary" />}
+              icon={<Cpu className="h-5 w-5" />}
+              iconClassName="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
               title="Health-tech builders"
               description="Need a practical pattern for FHIR, SNOMED, terminology validation, and AI-assisted workflows."
             />
             <ForCard
-              icon={<Globe className="h-5 w-5 text-primary" />}
+              icon={<Globe className="h-5 w-5" />}
+              iconClassName="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
               title="Interoperability teams"
               description="Need reliable FHIR-native data that can support analytics, reporting, and downstream system exchange."
             />
@@ -185,31 +189,37 @@ function BusinessCasePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <ValueCard
               icon={<Layers className="h-5 w-5" />}
+              iconClassName="bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300"
               title="Standardised structured healthcare data"
               description="Converts clinical information into FHIR-ready structured resources."
             />
             <ValueCard
               icon={<ScanText className="h-5 w-5" />}
+              iconClassName="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
               title="Intelligent workflow support"
               description="Helps users identify candidate conditions from free-text notes."
             />
             <ValueCard
               icon={<Clock className="h-5 w-5" />}
+              iconClassName="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
               title="Reduced clinician and admin effort"
               description="Supports review, coding, and sign-off instead of manual re-entry."
             />
             <ValueCard
               icon={<Globe className="h-5 w-5" />}
+              iconClassName="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
               title="Better interoperability"
               description="Uses FHIR R4 and terminology-ready workflows."
             />
             <ValueCard
               icon={<ShieldCheck className="h-5 w-5" />}
+              iconClassName="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
               title="Safer clinical automation"
               description="No NLP result is saved automatically. Clinician approval is required."
             />
             <ValueCard
               icon={<Search className="h-5 w-5" />}
+              iconClassName="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
               title="Terminology-ready design"
               description="Uses a secure OntoServer/NHS Terminology Server proxy pattern."
             />
@@ -314,31 +324,37 @@ function BusinessCasePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <ValueCard
               icon={<BarChart3 className="h-5 w-5" />}
+              iconClassName="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
               title="Improves structured data quality"
               description="Converts free-text into reliable, structured clinical records."
             />
             <ValueCard
               icon={<Clock className="h-5 w-5" />}
+              iconClassName="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
               title="Reduces manual coding effort"
               description="Supports review workflows that reduce repetitive administrative work."
             />
             <ValueCard
               icon={<ShieldCheck className="h-5 w-5" />}
+              iconClassName="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
               title="Safer AI-assisted clinical workflows"
               description="No automatic writes. Human review gates every step."
             />
             <ValueCard
               icon={<Globe className="h-5 w-5" />}
+              iconClassName="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
               title="Supports interoperability"
               description="FHIR R4 data supports analytics and downstream care coordination."
             />
             <ValueCard
               icon={<Activity className="h-5 w-5" />}
+              iconClassName="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
               title="Reporting and analytics ready"
               description="Structured data prepares for dashboards, audits, and population health."
             />
             <ValueCard
               icon={<Cpu className="h-5 w-5" />}
+              iconClassName="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
               title="Reusable architecture"
               description="A practical pattern for health-tech teams building on FHIR."
             />
@@ -430,20 +446,20 @@ function BusinessCasePage() {
   );
 }
 
-function ForCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+function ForCard({ icon, title, description, iconClassName = "bg-primary/10 text-primary" }: { icon: React.ReactNode; title: string; description: string; iconClassName?: string }) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/30">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">{icon}</div>
+      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconClassName}`}>{icon}</div>
       <h3 className="text-base font-semibold text-foreground">{title}</h3>
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
 
-function ValueCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+function ValueCard({ icon, title, description, iconClassName = "bg-primary/10 text-primary" }: { icon: React.ReactNode; title: string; description: string; iconClassName?: string }) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/30">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">{icon}</div>
+      <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${iconClassName}`}>{icon}</div>
       <h3 className="text-base font-semibold text-foreground">{title}</h3>
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>

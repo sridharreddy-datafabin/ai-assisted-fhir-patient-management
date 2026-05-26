@@ -51,19 +51,14 @@ function Demographics({ patient }: { patient: FhirPatient }) {
       <div className="h-1 w-full bg-gradient-to-r from-primary via-[oklch(0.5_0.13_220)] to-[oklch(0.65_0.14_195)]" />
       <div className="p-6">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h2 className="truncate text-2xl font-bold tracking-tight text-foreground">
-              {formatPatientName(patient)}
-            </h2>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <GenderBadge gender={patient.gender} />
-              {age != null && (
-                <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                  Age {age}
-                </span>
-              )}
+            <div className="min-w-0 flex-1">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground leading-snug">
+                {formatPatientName(patient)}
+              </h2>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <GenderBadge gender={patient.gender} />
+              </div>
             </div>
-          </div>
           <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
             <div>
               <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Date of birth</div>
