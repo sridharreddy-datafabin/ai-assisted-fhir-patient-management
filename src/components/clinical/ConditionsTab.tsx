@@ -118,7 +118,7 @@ async function validateCode(code: string): Promise<ValidationResult> {
         ...base,
         status: "auth-required",
         message:
-          "Terminology service requires authentication. Configure OntoServer/NHS bearer token to validate SNOMED codes.",
+          "NHS terminology authentication is pending. Existing condition validation is configured but cannot complete until credentials are available.",
       };
     }
     if (res.status === 403) {
