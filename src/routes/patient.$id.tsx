@@ -43,49 +43,60 @@ function GenderBadge({ gender }: { gender?: string }) {
   return <span className="text-muted-foreground capitalize">{gender ?? "—"}</span>;
 }
 
+function MetaField({
+  label,
+  children,
+  title,
+  mono,
+}: {
+  label: string;
+  children: React.ReactNode;
+  title?: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </div>
+      <div
+        className={`mt-1 truncate font-medium text-foreground ${
+          mono ? "font-mono text-[11px] text-muted-foreground" : ""
+        }`}
+        title={title}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function Demographics({ patient }: { patient: FhirPatient }) {
   const age = calculateAge(patient.birthDate);
   const mrn = patientIdentifier(patient);
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
       <div className="h-1 w-full bg-gradient-to-r from-primary via-[oklch(0.5_0.13_220)] to-[oklch(0.65_0.14_195)]" />
-      <div className="p-6">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0 flex-1">
-              <h2 className="text-2xl font-bold tracking-tight text-foreground leading-snug">
-                {formatPatientName(patient)}
-              </h2>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <GenderBadge gender={patient.gender} />
-              </div>
-            </div>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Date of birth</div>
-              <div className="mt-1 font-medium text-foreground">{patient.birthDate ?? "—"}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Age</div>
-              <div className="mt-1 font-medium text-foreground">{age != null ? `${age}` : "—"}</div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Patient ID</div>
-              <div
-                className="mt-1 truncate font-medium text-foreground"
-                title={mrn ?? undefined}
-              >
-                {mrn ?? (
-                  <span className="text-muted-foreground italic">No patient identifier available</span>
-                )}
-              </div>
-            </div>
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">FHIR ID</div>
-              <div className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
-                {patient.id ?? "—"}
-              </div>
-            </div>
-          </div>
+      <div className="space-y-5 p-6">
+        <div className="min-w-0">
+          <h2 className="text-2xl font-bold leading-snug tracking-tight text-foreground break-words">
+            {formatPatientName(patient)}
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-x-6 gap-y-4 border-t border-border/60 pt-5 text-sm sm:grid-cols-3 lg:grid-cols-5">
+          <MetaField label="Gender">
+            <GenderBadge gender={patient.gender} />
+          </MetaField>
+          <MetaField label="Date of birth">{patient.birthDate ?? "—"}</MetaField>
+          <MetaField label="Age">{age != null ? `${age}` : "—"}</MetaField>
+          <MetaField label="Patient ID" title={mrn ?? undefined}>
+            {mrn ?? (
+              <span className="italic text-muted-foreground">Not available</span>
+            )}
+          </MetaField>
+          <MetaField label="FHIR ID" title={patient.id} mono>
+            {patient.id ?? "—"}
+          </MetaField>
         </div>
       </div>
     </div>
