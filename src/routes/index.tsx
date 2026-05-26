@@ -123,6 +123,13 @@ function PatientsPage() {
           </div>
           <nav className="flex items-center gap-1">
             <Link
+              to="/business-case"
+              className="rounded-md px-3 py-1.5 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-accent-foreground"
+              activeProps={{ className: "rounded-md px-3 py-1.5 text-sm font-semibold bg-accent text-accent-foreground" }}
+            >
+              Business Case
+            </Link>
+            <Link
               to="/terminology"
               className="rounded-md px-3 py-1.5 text-sm font-semibold text-primary transition-colors hover:bg-accent hover:text-accent-foreground"
               activeProps={{ className: "rounded-md px-3 py-1.5 text-sm font-semibold bg-accent text-accent-foreground" }}

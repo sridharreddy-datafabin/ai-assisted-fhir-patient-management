@@ -110,6 +110,9 @@ function TerminologyPage() {
             <h1 className="text-lg font-semibold text-foreground">Patient Management</h1>
           </div>
           <div className="flex items-center gap-4">
+            <Link to="/business-case" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+              Business Case
+            </Link>
             <Link to="/terminology-configuration" className="text-xs font-medium text-muted-foreground hover:text-foreground">
               Configuration
             </Link>
