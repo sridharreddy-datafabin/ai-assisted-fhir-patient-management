@@ -324,31 +324,37 @@ function BusinessCasePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <ValueCard
               icon={<BarChart3 className="h-5 w-5" />}
+              iconClassName="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
               title="Improves structured data quality"
               description="Converts free-text into reliable, structured clinical records."
             />
             <ValueCard
               icon={<Clock className="h-5 w-5" />}
+              iconClassName="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
               title="Reduces manual coding effort"
               description="Supports review workflows that reduce repetitive administrative work."
             />
             <ValueCard
               icon={<ShieldCheck className="h-5 w-5" />}
+              iconClassName="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
               title="Safer AI-assisted clinical workflows"
               description="No automatic writes. Human review gates every step."
             />
             <ValueCard
               icon={<Globe className="h-5 w-5" />}
+              iconClassName="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300"
               title="Supports interoperability"
               description="FHIR R4 data supports analytics and downstream care coordination."
             />
             <ValueCard
               icon={<Activity className="h-5 w-5" />}
+              iconClassName="bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
               title="Reporting and analytics ready"
               description="Structured data prepares for dashboards, audits, and population health."
             />
             <ValueCard
               icon={<Cpu className="h-5 w-5" />}
+              iconClassName="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
               title="Reusable architecture"
               description="A practical pattern for health-tech teams building on FHIR."
             />
