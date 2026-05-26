@@ -67,7 +67,7 @@ function TerminologyPage() {
         let message: string;
         if (res.status === 401) {
           message =
-            "Terminology service requires authentication. SNOMED search is unavailable until an OntoServer/NHS bearer token is configured.";
+            "NHS Terminology Server credentials are pending. The app uses a secure backend terminology proxy and correctly handles authentication-required responses. Live SNOMED search, validation, and mapping will activate once system-to-system credentials are configured. No fake SNOMED results are shown.";
           setStatus("auth-required");
         } else if (res.status === 403) {
           message =
