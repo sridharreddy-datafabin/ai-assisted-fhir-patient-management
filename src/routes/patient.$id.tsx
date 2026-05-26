@@ -2,11 +2,12 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import logo from "@/assets/logo.png";
+import { BrandMark } from "@/components/clinical/BrandMark";
 import {
   getPatient,
   formatPatientName,
   calculateAge,
+  patientIdentifier,
   type FhirPatient,
 } from "@/lib/fhir";
 import { LoadingState, ErrorState } from "@/components/clinical/StateViews";
@@ -44,31 +45,51 @@ function GenderBadge({ gender }: { gender?: string }) {
 
 function Demographics({ patient }: { patient: FhirPatient }) {
   const age = calculateAge(patient.birthDate);
+  const mrn = patientIdentifier(patient);
   return (
-    <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">{formatPatientName(patient)}</h2>
-          {age != null && (
-            <p className="mt-1 text-sm text-muted-foreground">{age} years old</p>
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Gender</div>
-            <div className="mt-1"><GenderBadge gender={patient.gender} /></div>
+    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+      <div className="h-1 w-full bg-gradient-to-r from-primary via-[oklch(0.5_0.13_220)] to-[oklch(0.65_0.14_195)]" />
+      <div className="p-6">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="truncate text-2xl font-bold tracking-tight text-foreground">
+              {formatPatientName(patient)}
+            </h2>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <GenderBadge gender={patient.gender} />
+              {age != null && (
+                <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                  Age {age}
+                </span>
+              )}
+            </div>
           </div>
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Date of birth</div>
-            <div className="mt-1 font-medium text-foreground">{patient.birthDate ?? "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Age</div>
-            <div className="mt-1 font-medium text-foreground">{age != null ? `${age}` : "—"}</div>
-          </div>
-          <div>
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">Patient ID</div>
-            <div className="mt-1 break-all font-mono text-xs text-foreground">{patient.id ?? "—"}</div>
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm sm:grid-cols-4">
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Date of birth</div>
+              <div className="mt-1 font-medium text-foreground">{patient.birthDate ?? "—"}</div>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Age</div>
+              <div className="mt-1 font-medium text-foreground">{age != null ? `${age}` : "—"}</div>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Patient ID</div>
+              <div
+                className="mt-1 truncate font-medium text-foreground"
+                title={mrn ?? undefined}
+              >
+                {mrn ?? (
+                  <span className="text-muted-foreground italic">No patient identifier available</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">FHIR ID</div>
+              <div className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
+                {patient.id ?? "—"}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -87,12 +108,10 @@ function PatientDetailPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2.5">
-            <img src={logo} alt="Patient Management" className="h-7 w-7" />
-            <h1 className="text-lg font-semibold text-foreground">Patient Management</h1>
-          </div>
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
+          <BrandMark />
+
           <div className="flex items-center gap-4">
             <Link
               to="/business-case"

@@ -22,12 +22,32 @@ export interface FhirReference {
   display?: string;
 }
 
+export interface FhirIdentifier {
+  use?: string;
+  system?: string;
+  value?: string;
+  type?: FhirCodeableConcept;
+}
+
 export interface FhirPatient {
   resourceType: "Patient";
   id?: string;
+  identifier?: FhirIdentifier[];
   name?: FhirHumanName[];
   gender?: Gender;
   birthDate?: string;
+}
+
+export function patientIdentifier(p: FhirPatient): string | null {
+  const ids = p.identifier ?? [];
+  if (ids.length === 0) return null;
+  const usual = ids.find((i) => i.use === "usual" && i.value);
+  const official = ids.find((i) => i.use === "official" && i.value);
+  const mr = ids.find((i) =>
+    i.type?.coding?.some((c) => c.code === "MR"),
+  );
+  const first = ids.find((i) => i.value);
+  return (usual ?? official ?? mr ?? first)?.value ?? null;
 }
 
 export interface FhirQuantity {

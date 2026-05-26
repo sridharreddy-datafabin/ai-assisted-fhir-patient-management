@@ -84,22 +84,51 @@ export function OverviewTab({ patient }: { patient: FhirPatient }) {
   const latest = latestByCode(vitals);
 
   const stats = [
-    { label: "Active conditions", value: activeConditions.length, icon: Stethoscope },
-    { label: "Active medications", value: activeMeds.length, icon: Pill },
-    { label: "Vital records", value: vitals.length, icon: Activity },
-    { label: "Age", value: age != null ? `${age}` : "—", icon: Heart },
+    {
+      label: "Active conditions",
+      value: activeConditions.length,
+      icon: Stethoscope,
+      iconClass: "text-amber-600 dark:text-amber-400",
+      tileClass: "bg-amber-100/70 ring-1 ring-amber-200/70 dark:bg-amber-500/15 dark:ring-amber-500/20",
+    },
+    {
+      label: "Active medications",
+      value: activeMeds.length,
+      icon: Pill,
+      iconClass: "text-indigo-600 dark:text-indigo-400",
+      tileClass: "bg-indigo-100/70 ring-1 ring-indigo-200/70 dark:bg-indigo-500/15 dark:ring-indigo-500/20",
+    },
+    {
+      label: "Vital records",
+      value: vitals.length,
+      icon: Activity,
+      iconClass: "text-teal-600 dark:text-teal-400",
+      tileClass: "bg-teal-100/70 ring-1 ring-teal-200/70 dark:bg-teal-500/15 dark:ring-teal-500/20",
+    },
+    {
+      label: "Age",
+      value: age != null ? `${age}` : "—",
+      icon: Heart,
+      iconClass: "text-rose-600 dark:text-rose-400",
+      tileClass: "bg-rose-100/70 ring-1 ring-rose-200/70 dark:bg-rose-500/15 dark:ring-rose-500/20",
+    },
   ];
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-lg border border-border bg-card p-4 shadow-sm">
+          <div
+            key={s.label}
+            className="group rounded-xl border border-border bg-card p-4 shadow-sm transition-colors hover:border-primary/30"
+          >
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase tracking-wider text-muted-foreground">
                 {s.label}
               </span>
-              <s.icon className="h-4 w-4 text-muted-foreground" />
+              <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${s.tileClass}`}>
+                <s.icon className={`h-4 w-4 ${s.iconClass}`} />
+              </span>
             </div>
             <div className="mt-2 text-2xl font-bold text-foreground">{s.value}</div>
           </div>
