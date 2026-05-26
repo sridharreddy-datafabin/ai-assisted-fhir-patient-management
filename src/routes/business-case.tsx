@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import logo from "@/assets/logo.png";
 import {
   Activity,
   AlertCircle,
@@ -44,7 +45,7 @@ function BusinessCasePage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 shadow-sm ring-1 ring-primary/20">
-              <img src={"logo"} alt="" className="h-6 w-6" />
+              <img src={logo} alt="" className="h-6 w-6" />
             </div>
             <div className="flex flex-col leading-tight">
               <h1 className="text-base font-bold tracking-tight text-primary">Patient Management</h1>
